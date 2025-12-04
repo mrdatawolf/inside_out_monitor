@@ -1,0 +1,20 @@
+{
+  "targets": [
+    {
+      "ip": "192.168.1.10",
+      "name": "Office-Printer-HP"
+    },
+    {
+      "ip": "192.168.1.20",
+      "name": "Reception-PC"
+    },
+    {
+      "ip": "192.168.1.30",
+      "name": "Conference-Room-Display"
+    },
+    {
+      "ip": "192.168.1.100",
+      "name": "Network-Scanner"
+    }
+  ]
+}

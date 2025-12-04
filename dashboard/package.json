@@ -1,0 +1,70 @@
+{
+  "name": "inside-out-monitor-dashboard",
+  "version": "1.0.0",
+  "description": "Desktop dashboard for Inside-Out Monitor",
+  "main": "electron-main.js",
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:dev": "electron .",
+    "build:electron": "npm run build && electron-builder",
+    "build:electron:win": "npm run build && electron-builder --win",
+    "build:electron:linux": "npm run build && electron-builder --linux",
+    "build:electron:macos": "npm run build && electron-builder --mac",
+    "bundle:server": "esbuild dashboard-server.js --bundle --platform=node --target=node18 --format=cjs --banner:js=\"const import_meta={url:require('url').pathToFileURL(__filename).href};\" --define:import.meta=import_meta --outfile=dashboard-bundle.cjs",
+    "prepare:pkg": "node prepare-pkg.js",
+    "build:dashboard": "npm run build && npm run bundle:server && npm run prepare:pkg && cd pkg-build && pkg . --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output ../../dist/monitor-dashboard-server",
+    "build:dashboard:win": "npm run build && npm run bundle:server && npm run prepare:pkg && cd pkg-build && pkg . --targets node18-win-x64 --output ../../dist/monitor-dashboard-win.exe",
+    "build:dashboard:linux": "npm run build && npm run bundle:server && npm run prepare:pkg && cd pkg-build && pkg . --targets node18-linux-x64 --output ../../dist/monitor-dashboard-linux",
+    "build:dashboard:macos": "npm run build && npm run bundle:server && npm run prepare:pkg && cd pkg-build && pkg . --targets node18-macos-x64 --output ../../dist/monitor-dashboard-macos"
+  },
+  "pkg": {
+    "assets": [
+      "dist/**/*"
+    ],
+    "outputPath": "../dist"
+  },
+  "build": {
+    "appId": "com.insideoutmonitor.dashboard",
+    "productName": "Inside-Out Monitor",
+    "files": [
+      "electron-main.js",
+      "dist/**/*"
+    ],
+    "directories": {
+      "output": "../dist/electron"
+    },
+    "win": {
+      "target": ["portable"],
+      "icon": "icon.png"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "category": "System"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.utilities"
+    }
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "recharts": "^2.10.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "electron": "^39.2.4",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.27.0",
+    "pkg": "^5.8.1",
+    "vite": "^5.0.8"
+  }
+}

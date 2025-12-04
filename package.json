@@ -1,0 +1,45 @@
+{
+  "name": "inside-out-monitor",
+  "version": "1.0.0",
+  "description": "Device monitoring system with encrypted heartbeats",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:server": "cd server && npm test",
+    "test:client": "cd client && npm test",
+    "test:all": "npm run test:server && npm run test:client && npm test",
+    "test:coverage": "npm run test:server -- --coverage && npm run test:client -- --coverage && npm test -- --coverage",
+    "prebuild": "node scripts/inject-config.js",
+    "build": "npm run build:client && npm run build:server && npm run build:dashboard",
+    "build:win": "npm run build:client:win && npm run build:server:win && npm run build:dashboard:win",
+    "build:linux": "npm run build:client:linux && npm run build:server:linux && npm run build:dashboard:linux",
+    "build:macos": "npm run build:client:macos && npm run build:server:macos && npm run build:dashboard:macos",
+    "build:client": "cd client && npm run build",
+    "build:client:win": "cd client && npm run build:win && npm run build:ping:win",
+    "build:client:linux": "cd client && npm run build:linux && npm run build:ping:linux",
+    "build:client:macos": "cd client && npm run build:macos && npm run build:ping:macos",
+    "build:server": "cd server && npm run build",
+    "build:server:win": "cd server && npm run build:win",
+    "build:server:linux": "cd server && npm run build:linux",
+    "build:server:macos": "cd server && npm run build:macos",
+    "build:dashboard": "cd dashboard && npm run build:dashboard",
+    "build:dashboard:win": "cd dashboard && npm run build:dashboard:win",
+    "build:dashboard:linux": "cd dashboard && npm run build:dashboard:linux",
+    "build:dashboard:macos": "cd dashboard && npm run build:dashboard:macos",
+    "build:electron": "cd dashboard && npm run build:electron",
+    "build:electron:win": "cd dashboard && npm run build:electron:win",
+    "build:electron:linux": "cd dashboard && npm run build:electron:linux",
+    "build:electron:macos": "cd dashboard && npm run build:electron:macos"
+  },
+  "keywords": ["monitoring", "udp", "libsodium", "encryption"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "dependencies": {
+    "sql.js": "^1.12.0",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1"
+  }
+}

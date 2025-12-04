@@ -1,0 +1,11 @@
+{
+  "name": "inside-out-monitor-dashboard-server",
+  "version": "1.0.0",
+  "bin": "dashboard-bundle.cjs",
+  "pkg": {
+    "assets": [
+      "dist/*",
+      "dist/assets/*"
+    ]
+  }
+}

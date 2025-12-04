@@ -1,0 +1,2 @@
+# This directory stores the SQLite database files
+# The .sqlite3 database files are ignored by .gitignore

@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(chmod:*)",
+      "Bash(if exist distmonitor-client-win.exe del distmonitor-client-win.exe)",
+      "Bash(npm run build:win:*)",
+      "Bash(./monitor-client-win.exe:*)",
+      "Bash(./monitor-server-win.exe:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:ping:win:*)",
+      "Bash(./ping-monitor-win.exe:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run build:exe:win:*)",
+      "Bash(./monitor-dashboard-win.exe:*)",
+      "Bash(timeout:*)",
+      "Bash(npm run electron:build:win:*)",
+      "Bash(node scripts/inject-config.js:*)",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(npx asar:*)",
+      "Bash(npm run build:server:win:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm run build:client:win:*)",
+      "Bash(npm run build:dashboard:win:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

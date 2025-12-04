@@ -1,0 +1,50 @@
+{
+  "name": "inside-out-monitor-server",
+  "version": "1.0.0",
+  "description": "UDP server for device monitoring with encrypted heartbeats",
+  "main": "server.js",
+  "type": "module",
+  "bin": {
+    "monitor-server": "./server-cli.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "keygen": "node utils/keygen.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "bundle": "esbuild server-cli.js --bundle --platform=node --target=node18 --format=cjs --banner:js=\"const import_meta={url:require('url').pathToFileURL(__filename).href};\" --define:import.meta=import_meta --external:sql.js --outfile=../dist/server-bundle.cjs",
+    "copy-wasm": "node -e \"require('fs').copyFileSync('node_modules/sql.js/dist/sql-wasm.wasm', '../dist/sql-wasm.wasm')\"",
+    "build": "npm run copy-wasm && npm run bundle && pkg ../dist/server-bundle.cjs --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output ../dist/monitor-server",
+    "build:win": "npm run copy-wasm && npm run bundle && pkg ../dist/server-bundle.cjs --targets node18-win-x64 --output ../dist/monitor-server-win.exe",
+    "build:linux": "npm run copy-wasm && npm run bundle && pkg ../dist/server-bundle.cjs --targets node18-linux-x64 --output ../dist/monitor-server-linux",
+    "build:macos": "npm run copy-wasm && npm run bundle && pkg ../dist/server-bundle.cjs --targets node18-macos-x64 --output ../dist/monitor-server-macos"
+  },
+  "pkg": {
+    "assets": [
+      "node_modules/sql.js/**/*",
+      "node_modules/tweetnacl/**/*",
+      "node_modules/tweetnacl-util/**/*"
+    ],
+    "outputPath": "../dist"
+  },
+  "keywords": [
+    "monitoring",
+    "udp",
+    "libsodium"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "sql.js": "^1.12.0",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.0",
+    "jest": "^29.7.0",
+    "pkg": "^5.8.1"
+  }
+}
