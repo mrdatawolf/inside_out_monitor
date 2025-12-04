@@ -68,3 +68,4 @@ ping-monitor-cli.mjs
 
 # Electron build artifacts
 dist/electron/
+server/nul
