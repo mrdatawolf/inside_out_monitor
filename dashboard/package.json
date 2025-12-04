@@ -16,10 +16,11 @@
     "build:electron:macos": "npm run build && electron-builder --mac",
     "bundle:server": "esbuild dashboard-server.js --bundle --platform=node --target=node18 --format=cjs --banner:js=\"const import_meta={url:require('url').pathToFileURL(__filename).href};\" --define:import.meta=import_meta --outfile=dashboard-bundle.cjs",
     "prepare:pkg": "node prepare-pkg.js",
-    "build:dashboard": "npm run build && npm run bundle:server && npm run prepare:pkg && cd pkg-build && pkg . --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output ../../dist/monitor-dashboard-server",
-    "build:dashboard:win": "npm run build && npm run bundle:server && npm run prepare:pkg && cd pkg-build && pkg . --targets node18-win-x64 --output ../../dist/monitor-dashboard-win.exe",
-    "build:dashboard:linux": "npm run build && npm run bundle:server && npm run prepare:pkg && cd pkg-build && pkg . --targets node18-linux-x64 --output ../../dist/monitor-dashboard-linux",
-    "build:dashboard:macos": "npm run build && npm run bundle:server && npm run prepare:pkg && cd pkg-build && pkg . --targets node18-macos-x64 --output ../../dist/monitor-dashboard-macos"
+    "cleanup": "node -e \"const fs=require('fs'); try{fs.unlinkSync('dashboard-bundle.cjs')}catch(e){}\"",
+    "build:dashboard": "npm run build && npm run bundle:server && npm run prepare:pkg && cd pkg-build && pkg . --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output ../../dist/heartbeat-dashboard-server && cd .. && npm run cleanup",
+    "build:dashboard:win": "npm run build && npm run bundle:server && npm run prepare:pkg && cd pkg-build && pkg . --targets node18-win-x64 --output ../../dist/heartbeat-dashboard-win.exe && cd .. && npm run cleanup",
+    "build:dashboard:linux": "npm run build && npm run bundle:server && npm run prepare:pkg && cd pkg-build && pkg . --targets node18-linux-x64 --output ../../dist/heartbeat-dashboard-linux && cd .. && npm run cleanup",
+    "build:dashboard:macos": "npm run build && npm run bundle:server && npm run prepare:pkg && cd pkg-build && pkg . --targets node18-macos-x64 --output ../../dist/heartbeat-dashboard-macos && cd .. && npm run cleanup"
   },
   "pkg": {
     "assets": [

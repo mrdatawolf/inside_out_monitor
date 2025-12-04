@@ -32,6 +32,18 @@ try {
   process.exit(1);
 }
 
+// Validate config structure
+if (!config.serverUrl || !config.serverUrl.host) {
+  console.error('❌ Error: config.js must have serverUrl.host defined');
+  console.error('Please update your config.js to match config.example.js structure');
+  process.exit(1);
+}
+
+const serverHost = config.serverUrl.host;
+const serverUdpPort = config.serverUrl.udpPort || 4000;
+const serverApiPort = config.serverUrl.apiPort || 3000;
+const apiUrl = `http://${serverHost}:${serverApiPort}`;
+
 // Update dashboard/src/api.js
 const apiFilePath = join(rootDir, 'dashboard', 'src', 'api.js');
 try {
@@ -39,14 +51,62 @@ try {
 
   // Replace the API URL in the production condition
   apiContent = apiContent.replace(
-    /\? '.*?'  \/\/ Production - change this to your server IP/,
-    `? '${config.api.url}/api'  // Production - configured from root config.js`
+    /\? '.*?'  \/\/ Production - configured from root config\.js/,
+    `? '${apiUrl}/api'  // Production - configured from root config.js`
   );
 
   writeFileSync(apiFilePath, apiContent, 'utf8');
-  console.log(`✅ Updated dashboard API URL: ${config.api.url}/api`);
+  console.log(`✅ Updated dashboard API URL: ${apiUrl}/api`);
 } catch (error) {
   console.error('❌ Error updating dashboard/src/api.js:', error.message);
+  process.exit(1);
+}
+
+// Update client/client-cli.js
+const clientCliPath = join(rootDir, 'client', 'client-cli.js');
+try {
+  let clientContent = readFileSync(clientCliPath, 'utf8');
+
+  // Replace the default serverHost
+  clientContent = clientContent.replace(
+    /let serverHost = '.*?';/,
+    `let serverHost = '${serverHost}';`
+  );
+
+  // Replace the default serverPort
+  clientContent = clientContent.replace(
+    /let serverPort = \d+;/,
+    `let serverPort = ${serverUdpPort};`
+  );
+
+  writeFileSync(clientCliPath, clientContent, 'utf8');
+  console.log(`✅ Updated client default server: ${serverHost}:${serverUdpPort}`);
+} catch (error) {
+  console.error('❌ Error updating client/client-cli.js:', error.message);
+  process.exit(1);
+}
+
+// Update client/ping-monitor-cli.js
+const pingCliPath = join(rootDir, 'client', 'ping-monitor-cli.js');
+try {
+  let pingContent = readFileSync(pingCliPath, 'utf8');
+
+  // Replace the default serverHost
+  pingContent = pingContent.replace(
+    /let serverHost = '.*?';/,
+    `let serverHost = '${serverHost}';`
+  );
+
+  // Replace the default serverPort
+  pingContent = pingContent.replace(
+    /let serverPort = \d+;/,
+    `let serverPort = ${serverUdpPort};`
+  );
+
+  writeFileSync(pingCliPath, pingContent, 'utf8');
+  console.log(`✅ Updated ping-monitor default server: ${serverHost}:${serverUdpPort}`);
+} catch (error) {
+  console.error('❌ Error updating client/ping-monitor-cli.js:', error.message);
   process.exit(1);
 }
 

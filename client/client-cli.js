@@ -20,7 +20,7 @@ const __dirname = dirname(__filename);
 // Parse command line arguments
 const args = process.argv.slice(2);
 let deviceName = os.hostname();
-let serverHost = '127.0.0.1';
+let serverHost = '192.168.203.241';
 let serverPort = 4000;
 let interval = 0;
 
