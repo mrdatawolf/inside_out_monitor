@@ -5,22 +5,23 @@
   "main": "client.js",
   "type": "module",
   "bin": {
-    "monitor-client": "./client-cli.js",
-    "ping-monitor": "./ping-monitor-cli.js"
+    "heartbeat-client": "./client-cli.js",
+    "heartbeat-ping": "./ping-monitor-cli.js"
   },
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "bundle": "esbuild client-cli.js --bundle --platform=node --target=node18 --format=cjs --banner:js=\"const import_meta={url:require('url').pathToFileURL(__filename).href};\" --define:import.meta=import_meta --outfile=../dist/client-bundle.cjs && esbuild ping-monitor-cli.js --bundle --platform=node --target=node18 --format=cjs --banner:js=\"const import_meta={url:require('url').pathToFileURL(__filename).href};\" --define:import.meta=import_meta --outfile=../dist/ping-bundle.cjs",
-    "build": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output ../dist/monitor-client",
-    "build:win": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-win-x64 --output ../dist/monitor-client-win.exe",
-    "build:linux": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-linux-x64 --output ../dist/monitor-client-linux",
-    "build:macos": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-macos-x64 --output ../dist/monitor-client-macos",
-    "build:ping": "npm run bundle && pkg ../dist/ping-bundle.cjs --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output ../dist/ping-monitor",
-    "build:ping:win": "npm run bundle && pkg ../dist/ping-bundle.cjs --targets node18-win-x64 --output ../dist/ping-monitor-win.exe",
-    "build:ping:linux": "npm run bundle && pkg ../dist/ping-bundle.cjs --targets node18-linux-x64 --output ../dist/ping-monitor-linux",
-    "build:ping:macos": "npm run bundle && pkg ../dist/ping-bundle.cjs --targets node18-macos-x64 --output ../dist/ping-monitor-macos"
+    "cleanup": "node -e \"const fs=require('fs'); ['../dist/client-bundle.cjs','../dist/ping-bundle.cjs'].forEach(f=>{try{fs.unlinkSync(f)}catch(e){}})\"",
+    "build": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output ../dist/heartbeat-client && npm run build:ping && npm run cleanup",
+    "build:win": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-win-x64 --output ../dist/heartbeat-client-win.exe && npm run build:ping:win && npm run cleanup",
+    "build:linux": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-linux-x64 --output ../dist/heartbeat-client-linux && npm run build:ping:linux && npm run cleanup",
+    "build:macos": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-macos-x64 --output ../dist/heartbeat-client-macos && npm run build:ping:macos && npm run cleanup",
+    "build:ping": "pkg ../dist/ping-bundle.cjs --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output ../dist/heartbeat-ping",
+    "build:ping:win": "pkg ../dist/ping-bundle.cjs --targets node18-win-x64 --output ../dist/heartbeat-ping-win.exe",
+    "build:ping:linux": "pkg ../dist/ping-bundle.cjs --targets node18-linux-x64 --output ../dist/heartbeat-ping-linux",
+    "build:ping:macos": "pkg ../dist/ping-bundle.cjs --targets node18-macos-x64 --output ../dist/heartbeat-ping-macos"
   },
   "pkg": {
     "outputPath": "../dist"

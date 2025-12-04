@@ -58,7 +58,15 @@ dashboard/dist/
 # Executable builds (consolidated in root dist/)
 dist/
 *.exe
+
+# Build artifacts (intermediate bundles)
 *-bundle.cjs
+client-bundle.cjs
+ping-bundle.cjs
+server-bundle.cjs
+dashboard-bundle.cjs
+
+# Old executable names
 monitor-client-*
 monitor-server-*
 monitor-dashboard-*

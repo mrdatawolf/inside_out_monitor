@@ -5,18 +5,20 @@
  */
 
 export default {
+  // Server URL - IMPORTANT: Change this to your server's IP address or hostname
+  // This is used by the client, ping-monitor, and dashboard to connect to the server
+  serverUrl: {
+    host: 'YOUR_SERVER_IP',  // Server IP address or hostname
+    udpPort: 4000,           // UDP port for heartbeats
+    apiPort: 3000            // HTTP API port for dashboard
+  },
+
   // Server Configuration
   server: {
     udpPort: 4000,           // Port for receiving heartbeat messages
     apiPort: 3000,           // Port for HTTP API
     maxMessageAge: 300,      // Maximum message age in seconds (5 minutes)
     host: '0.0.0.0'          // Bind to all interfaces
-  },
-
-  // API Configuration (for dashboard)
-  api: {
-    // IMPORTANT: Change this to your server's IP address or hostname
-    url: 'http://YOUR_SERVER_IP:3000'
   },
 
   // Dashboard Configuration
