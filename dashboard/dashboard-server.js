@@ -8,7 +8,7 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync, readdirSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -93,6 +93,26 @@ if (isPackaged) {
   }
 }
 
+// Extract API URL from built JavaScript files
+let apiUrl = 'Unknown';
+try {
+  const assetsPath = join(distPath, 'assets');
+  if (existsSync(assetsPath)) {
+    const files = readdirSync(assetsPath).filter(f => f.endsWith('.js'));
+    for (const file of files) {
+      const content = readFileSync(join(assetsPath, file), 'utf8');
+      // Look for the API_BASE constant: const bn="http://...
+      const match = content.match(/const bn="(http:\/\/[^"]+)"/);
+      if (match) {
+        apiUrl = match[1];
+        break;
+      }
+    }
+  }
+} catch (error) {
+  // Ignore errors, just show Unknown
+}
+
 app.use(express.static(distPath));
 
 // Handle React Router - serve index.html for all routes
@@ -105,8 +125,9 @@ app.listen(port, '0.0.0.0', () => {
   console.log('='.repeat(60));
   console.log('Inside-Out Monitor Dashboard');
   console.log('='.repeat(60));
-  console.log(`  Server running at: http://localhost:${port}`);
-  console.log(`  Network accessible at: http://0.0.0.0:${port}`);
+  console.log(`  Dashboard URL: http://localhost:${port}`);
+  console.log(`  Network: http://0.0.0.0:${port}`);
+  console.log(`  API Server: ${apiUrl}`);
   console.log('='.repeat(60));
   console.log('');
   console.log('Press Ctrl+C to stop');
