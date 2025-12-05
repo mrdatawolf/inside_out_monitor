@@ -3,9 +3,11 @@ import nacl from 'tweetnacl';
 import util from 'tweetnacl-util';
 import { initDb, insertHeartbeat, insertPingResults } from './db.js';
 import { startApi } from './api.js';
+import { initAlerting, stopAlerting } from './alerting.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import config from '../config.js';
 
 const { encodeUTF8, decodeBase64 } = util;
 
@@ -19,6 +21,11 @@ const MAX_MESSAGE_AGE = 300; // 5 minutes in seconds
 async function startServer() {
   // Initialize database
   await initDb();
+
+  // Initialize alerting system if enabled
+  if (config.alerting && config.alerting.enabled) {
+    initAlerting(config.alerting);
+  }
 
   // Load pre-shared key
   let sharedKey;
