@@ -46,5 +46,47 @@ export default {
     secretKey: './secret.key',
     database: './databases',
     pingTargets: './ping-targets.json'
+  },
+
+  // Alerting Configuration (Phase 5)
+  alerting: {
+    enabled: false,  // Set to true to enable alerting
+
+    // Webhook configurations
+    webhooks: {
+      discord: [
+        // Example Discord webhook
+        // {
+        //   url: 'https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN',
+        //   name: 'IT Alerts',
+        //   devices: ['*'],              // ["*"] for all devices, or specific device names
+        //   pingTargets: ['*'],          // ["*"] for all targets, or specific IPs
+        //   events: ['offline', 'online'], // "online", "offline", "new_device", "new_ping_target"
+        //   mentions: []                 // Optional: ["<@&ROLE_ID>", "<@USER_ID>"]
+        // }
+      ],
+
+      teams: [
+        // Example Microsoft Teams webhook
+        // {
+        //   url: 'https://YOUR_TENANT.webhook.office.com/webhookb2/YOUR_WEBHOOK_ID',
+        //   name: 'Network Monitoring',
+        //   devices: ['router-*', 'switch-*'],
+        //   pingTargets: ['*'],
+        //   events: ['offline'],
+        //   severity: 'critical'         // "info", "warning", "critical"
+        // }
+      ]
+    },
+
+    // Alert behavior settings
+    behavior: {
+      debounceSeconds: 300,          // Wait time before alerting (5 min)
+      gracePeriodSeconds: 120,       // Grace period for brief outages (2 min)
+      batchDelaySeconds: 30,         // Batch alerts within this window
+      checkIntervalSeconds: 60,      // Status check frequency (1 min)
+      onlineThresholdSeconds: 600,   // Consider device offline after 10 min
+      cooldownSeconds: 3600          // Re-alert cooldown (1 hour)
+    }
   }
 }

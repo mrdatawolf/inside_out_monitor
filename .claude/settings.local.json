@@ -22,7 +22,10 @@
       "Bash(npm run build:server:win:*)",
       "Bash(taskkill:*)",
       "Bash(npm run build:client:win:*)",
-      "Bash(npm run build:dashboard:win:*)"
+      "Bash(npm run build:dashboard:win:*)",
+      "Bash(if exist serveralerting-config.example.js del serveralerting-config.example.js)",
+      "Bash(npm start)",
+      "Bash(copy servernode_modulessql.jsdistsql-wasm.wasm serversql-wasm.wasm)"
     ],
     "deny": [],
     "ask": []

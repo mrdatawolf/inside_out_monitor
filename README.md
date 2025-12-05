@@ -62,13 +62,14 @@ cp client/secret.key dist/secret.key
 - Available as standalone executable (no Node.js required)
 - See [client/PING-MONITOR.md](client/PING-MONITOR.md) for details
 
-**Phase 5** (Planned): Alerting System
+**Phase 5** (Complete): Alerting System
 - Discord and Microsoft Teams webhook integration for real-time alerts
 - Status change detection (device online/offline transitions)
 - Ping target status alerts (network device failures)
 - Configurable alert rules and debouncing to prevent spam
 - Rich message formatting with embeds (Discord) and Adaptive Cards (Teams)
-- See Phase 5 details below for implementation roadmap
+- Cooldown periods to prevent alert fatigue
+- See [ALERTING.md](ALERTING.md) for complete documentation
 
 **Phase 6** (Planned): Extended Reporting
 - Historical trend analysis
@@ -789,109 +790,89 @@ Decrypted JSON payload:
   - Network throughput visualization
   - Responsive, modern UI
 - ✅ **Phase 4**: Ping monitoring for network devices
-- 🚧 **Phase 5**: Alerting system (see below)
+- ✅ **Phase 5**: Alerting system ([ALERTING.md](ALERTING.md))
 - 📋 **Phase 6**: Extended reporting
 
-## Phase 5: Alerting System (Planned)
+## Phase 5: Alerting System (Complete)
 
-Real-time notifications when devices or network equipment change status.
+The alerting system monitors device and network equipment status changes and sends real-time notifications to Discord and Microsoft Teams via webhooks.
 
-### Step 1: Alert Detection System
+### Features Implemented
 
-**Status Change Detection:**
-- Monitor heartbeat table for device online/offline transitions
-- Track ping_results table for network device status changes
-- Debouncing logic to prevent alert spam (configurable grace period)
-- State tracking to detect transitions (online→offline, offline→online)
+**Alert Detection:**
+- ✅ Status change detection for heartbeat devices (online/offline transitions)
+- ✅ Status change detection for ping targets (reachable/unreachable)
+- ✅ New device/target detection
+- ✅ Debouncing logic to prevent alert spam
+- ✅ Grace period for brief outages
+- ✅ Cooldown periods to prevent alert fatigue
 
-**Implementation:**
-- Background monitoring service in server
-- Configurable check interval (default: 60 seconds)
-- Alert queue system to batch notifications
-- Database table to track last known status per device
+**Webhook Integrations:**
+- ✅ Discord webhooks with rich embeds and color coding
+- ✅ Microsoft Teams webhooks with MessageCard format
+- ✅ Configurable device/target filtering with wildcards
+- ✅ Event type filtering (online, offline, new device, etc.)
+- ✅ Optional @mentions for Discord alerts
 
-### Step 2: Webhook Integrations
+**Alert Management:**
+- ✅ Alert queue system with batching
+- ✅ Alert logging to database
+- ✅ Background monitoring service
+- ✅ Configurable check intervals
+- ✅ Pattern-based filtering (e.g., "router-*")
 
-**Discord Webhooks:**
-- Rich embeds with color coding (green=online, red=offline)
-- Device name, timestamp, last seen information
-- Optional @mentions for critical devices
-- Rate limiting to comply with Discord API limits
+### Configuration
 
-**Microsoft Teams Webhooks:**
-- Adaptive Cards with formatted status information
-- Action buttons to view device in dashboard
-- Severity indicators (Info, Warning, Critical)
-- Threaded conversations for device state changes
+All alerting settings are configured in [config.js](config.js). Example:
 
-**Configuration:**
 ```javascript
-{
+alerting: {
+  enabled: true,
   webhooks: {
     discord: [
       {
-        url: "https://discord.com/api/webhooks/...",
-        name: "IT Alerts",
-        devices: ["*"],  // All devices or specific list
-        events: ["offline", "online"]
+        url: 'https://discord.com/api/webhooks/...',
+        name: 'IT Alerts',
+        devices: ['*'],
+        pingTargets: ['*'],
+        events: ['offline', 'online']
       }
     ],
     teams: [
       {
-        url: "https://outlook.office.com/webhook/...",
-        name: "Network Monitoring",
-        devices: ["router-*", "switch-*"],
-        events: ["offline"]  // Only alert on failures
+        url: 'https://YOUR_TENANT.webhook.office.com/webhookb2/...',
+        name: 'Network Monitoring',
+        devices: ['router-*', 'switch-*'],
+        events: ['offline']
       }
     ]
   },
-  alerting: {
-    debounceSeconds: 300,  // Wait 5 min before alerting on status change
-    gracePeriodSeconds: 120,  // Grace period for brief outages
-    batchDelaySeconds: 30  // Batch alerts within 30 seconds
+  behavior: {
+    debounceSeconds: 300,
+    gracePeriodSeconds: 120,
+    cooldownSeconds: 3600
   }
 }
 ```
 
-### Step 3: Alert Features
+### Documentation
 
-**Alert Types:**
-1. **Heartbeat Alerts**
-   - Device goes offline (no heartbeat in X minutes)
-   - Device comes back online
-   - New device detected
+See [ALERTING.md](ALERTING.md) for:
+- Complete setup guide
+- Webhook configuration for Discord and Teams
+- Alert filtering and customization
+- Behavior tuning (debouncing, grace periods, cooldown)
+- Troubleshooting guide
+- Best practices
 
-2. **Ping Target Alerts**
-   - Network device becomes unreachable
-   - Network device recovers
-   - High latency warnings (response time > threshold)
+### Files Added
 
-3. **System Alerts**
-   - Server startup/shutdown
-   - Database errors
-   - Excessive alert volume (potential monitoring issue)
-
-**Alert Customization:**
-- Per-device alert rules
-- Time-based alert suppression (e.g., during maintenance windows)
-- Alert severity levels (Info, Warning, Critical)
-- Custom message templates
-- Alert escalation (retry with different channels if not acknowledged)
-
-**Future Enhancements:**
-- Slack integration
-- Email notifications (SMTP)
-- PagerDuty integration for on-call rotation
-- SMS alerts via Twilio
-- Alert acknowledgment tracking
-- Alert history and analytics
-
-**Files to Create:**
 - `server/alerting.js` - Core alerting engine
 - `server/webhooks/discord.js` - Discord webhook client
-- `server/webhooks/teams.js` - Teams webhook client
-- `server/alerting-config.example.js` - Configuration template
-- Database migration for alert state tracking
+- `server/webhooks/teams.js` - Microsoft Teams webhook client
+- `ALERTING.md` - Complete documentation
+- Updated `config.js` with alerting configuration
+- Added 3 database tables: `device_states`, `ping_target_states`, `alert_log`
 
 ## License
 

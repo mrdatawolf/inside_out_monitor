@@ -2,6 +2,7 @@ import initSqlJs from 'sql.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { stopAlerting } from './alerting.js';
 
 // In pkg executables, __dirname points to snapshot. Use process.cwd() or derive from execPath
 const __dirname = process.pkg ? dirname(process.execPath) : dirname(fileURLToPath(import.meta.url));
@@ -78,6 +79,54 @@ export async function initDb() {
   db.run(`CREATE INDEX IF NOT EXISTS idx_target_ip ON ping_results(target_ip)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_ping_received_at ON ping_results(received_at)`);
 
+  // Create device state tracking table for alerting
+  db.run(`
+    CREATE TABLE IF NOT EXISTS device_states (
+      device_name TEXT PRIMARY KEY,
+      status TEXT NOT NULL,
+      last_seen INTEGER NOT NULL,
+      last_status_change INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+  db.run(`CREATE INDEX IF NOT EXISTS idx_device_status ON device_states(status)`);
+
+  // Create ping target state tracking table for alerting
+  db.run(`
+    CREATE TABLE IF NOT EXISTS ping_target_states (
+      target_ip TEXT PRIMARY KEY,
+      target_name TEXT,
+      monitor_name TEXT NOT NULL,
+      status TEXT NOT NULL,
+      last_check INTEGER NOT NULL,
+      last_status_change INTEGER NOT NULL,
+      response_time_ms REAL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+  db.run(`CREATE INDEX IF NOT EXISTS idx_ping_target_status ON ping_target_states(status)`);
+
+  // Create alert log table to track all alerts sent
+  db.run(`
+    CREATE TABLE IF NOT EXISTS alert_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      alert_type TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_name TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      webhook_type TEXT NOT NULL,
+      webhook_name TEXT NOT NULL,
+      sent_at INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      error_message TEXT
+    )
+  `);
+
+  db.run(`CREATE INDEX IF NOT EXISTS idx_alert_entity ON alert_log(entity_type, entity_name)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_alert_sent_at ON alert_log(sent_at)`);
+
   console.log('✓ Database schema initialized');
 
   // Auto-save every 5 minutes
@@ -88,11 +137,13 @@ export async function initDb() {
   // Save on exit
   process.on('SIGINT', () => {
     console.log('\n⚠ Shutting down...');
+    stopAlerting();
     saveDb();
     process.exit(0);
   });
 
   process.on('SIGTERM', () => {
+    stopAlerting();
     saveDb();
     process.exit(0);
   });
