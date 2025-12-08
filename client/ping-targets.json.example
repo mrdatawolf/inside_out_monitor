@@ -2,19 +2,24 @@
   "targets": [
     {
       "ip": "192.168.1.10",
-      "name": "Office-Printer-HP"
+      "name": "Office-Printer-HP",
+      "interval": 60
     },
     {
       "ip": "192.168.1.20",
-      "name": "Reception-PC"
+      "name": "Reception-PC",
+      "interval": 60
     },
     {
       "ip": "192.168.1.30",
-      "name": "Conference-Room-Display"
+      "name": "Conference-Room-Display",
+      "interval": 30
     },
     {
       "ip": "192.168.1.100",
-      "name": "Network-Scanner"
+      "name": "Network-Scanner",
+      "interval": 5
     }
-  ]
+  ],
+  "_comment": "Interval is in seconds. Minimum: 1 second, Default: 60 seconds. Each target can have its own interval."
 }

@@ -17,18 +17,12 @@ import { getNetworkInterfaces } from './network-stats.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Build-time config injection (replaced by esbuild --define during build)
-// These will be replaced with actual values from config.js
-const BUILD_CONFIG = typeof BUILD_CONFIG !== 'undefined' ? BUILD_CONFIG : {
-  SERVER_HOST: '127.0.0.1',
-  SERVER_PORT: 4000
-};
-
-// Parse command line arguments
+// Configuration defaults (modified by inject-config.js during build)
+let embeddedSecretKey = 'DbOXvSqZ38D/vE5yrtp4haaJxHImFuicYFCj97BPBiI=';  // Injected during build from dist/secret.key
 const args = process.argv.slice(2);
 let deviceName = os.hostname();
-let serverHost = BUILD_CONFIG.SERVER_HOST;
-let serverPort = BUILD_CONFIG.SERVER_PORT;
+let serverHost = '192.168.203.241';
+let serverPort = 4000;
 let interval = 0;
 
 // Parse arguments
@@ -86,24 +80,40 @@ if (process.env.MONITOR_DEVICE_NAME) deviceName = process.env.MONITOR_DEVICE_NAM
 if (process.env.MONITOR_HOST) serverHost = process.env.MONITOR_HOST;
 if (process.env.MONITOR_PORT) serverPort = parseInt(process.env.MONITOR_PORT);
 
-// Load secret key
+// Load secret key (use embedded key if available, otherwise load from file)
 let secretKey;
-try {
-  // Try current directory first (for packaged exe)
-  const keyPath = join(process.cwd(), 'secret.key');
-  const keyBase64 = readFileSync(keyPath, 'utf8').trim();
-  secretKey = util.decodeBase64(keyBase64);
-} catch (error) {
+if (embeddedSecretKey && embeddedSecretKey !== 'PLACEHOLDER_SECRET_KEY') {
+  // Use embedded key (injected during build)
   try {
-    // Try script directory (for development)
-    const keyPath = join(__dirname, 'secret.key');
+    secretKey = util.decodeBase64(embeddedSecretKey);
+    console.log('✓ Using embedded secret key');
+  } catch (error) {
+    console.error('ERROR: Failed to decode embedded secret key');
+    console.error(`Error: ${error.message}`);
+    process.exit(1);
+  }
+} else {
+  // Fall back to loading from file (development mode or build without key)
+  try {
+    // Try current directory first (for packaged exe)
+    const keyPath = join(process.cwd(), 'secret.key');
     const keyBase64 = readFileSync(keyPath, 'utf8').trim();
     secretKey = util.decodeBase64(keyBase64);
-  } catch (err) {
-    console.error('ERROR: Failed to load secret.key');
-    console.error('Place secret.key in the same directory as this executable');
-    console.error(`Error: ${err.message}`);
-    process.exit(1);
+    console.log('✓ Loaded secret.key from file');
+  } catch (error) {
+    try {
+      // Try script directory (for development)
+      const keyPath = join(__dirname, 'secret.key');
+      const keyBase64 = readFileSync(keyPath, 'utf8').trim();
+      secretKey = util.decodeBase64(keyBase64);
+      console.log('✓ Loaded secret.key from file');
+    } catch (err) {
+      console.error('ERROR: Failed to load secret.key');
+      console.error('Place secret.key in the same directory as this executable');
+      console.error('Or rebuild with secret.key in dist/ to embed it');
+      console.error(`Error: ${err.message}`);
+      process.exit(1);
+    }
   }
 }
 

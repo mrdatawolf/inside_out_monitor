@@ -105,22 +105,20 @@ function UniFiClients() {
     <div className="unifi-clients">
       <div className="unifi-header">
         <h2>🔷 Dreaming: UniFi Network Clients</h2>
-        {lastUpdated && (
-          <p className="last-updated">Last updated: {lastUpdated.toLocaleTimeString()}</p>
-        )}
       </div>
 
+      {/* Stats Overview */}
       {stats && (
-        <div className="unifi-stats">
+        <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-value">{stats.total_clients}</div>
             <div className="stat-label">Total Clients</div>
           </div>
-          <div className="stat-card stat-online">
+          <div className="stat-card online">
             <div className="stat-value">{stats.connected_clients}</div>
             <div className="stat-label">Connected</div>
           </div>
-          <div className="stat-card stat-offline">
+          <div className="stat-card offline">
             <div className="stat-value">{stats.disconnected_clients}</div>
             <div className="stat-label">Disconnected</div>
           </div>
@@ -135,6 +133,7 @@ function UniFiClients() {
         </div>
       )}
 
+      {/* Filter Controls */}
       <div className="unifi-controls">
         <input
           type="text"
@@ -166,122 +165,74 @@ function UniFiClients() {
         </div>
       </div>
 
-      {/* Currently Connected Clients */}
-      {connectedClients.length > 0 && (
-        <div className="clients-section">
-          <h3 className="section-title">🟢 Currently Connected ({connectedClients.length})</h3>
-          <div className="clients-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Device</th>
-                  <th>Hostname</th>
-                  <th>MAC Address</th>
-                  <th>IP Address</th>
-                  <th>Type</th>
-                  <th>Manufacturer</th>
-                  <th>Signal</th>
-                  <th>Traffic</th>
-                  <th>Last Seen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {connectedClients.map((client) => (
-                  <tr key={client.mac} className="client-row connected">
-                    <td className="device-icon">{getDeviceIcon(client)}</td>
-                    <td className="hostname">
-                      {client.hostname || client.name || 'Unknown'}
-                    </td>
-                    <td className="mac">{formatMacAddress(client.mac)}</td>
-                    <td className="ip">{client.ip || '-'}</td>
-                    <td className="type">
-                      {client.is_wired ? (
-                        <span className="badge wired">Wired</span>
-                      ) : (
-                        <span className="badge wireless">Wireless</span>
-                      )}
-                    </td>
-                    <td className="manufacturer">{client.manufacturer || '-'}</td>
-                    <td className="signal">
-                      {client.signal && !client.is_wired ? `${client.signal} dBm` : '-'}
-                    </td>
-                    <td className="traffic">
-                      <div className="traffic-stats">
-                        <span title="Downloaded">↓ {formatBytes(client.rx_bytes)}</span>
-                        <span title="Uploaded">↑ {formatBytes(client.tx_bytes)}</span>
-                      </div>
-                    </td>
-                    <td className="last-seen">
-                      {formatTimeAgo(client.last_seen_ago)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {/* Client Cards */}
+      <div className="clients-section">
+        <h2>Clients</h2>
+        <div className="clients-list">
+          {filteredClients.length === 0 ? (
+            <div className="no-clients">
+              <p>No clients found{filterText ? ' matching your filter' : ''}.</p>
+              <p className="hint">Make sure the UniFi monitor is running and sending data to the server.</p>
+            </div>
+          ) : (
+            filteredClients.map(client => (
+              <Link
+                key={client.mac}
+                to={`/unifi/client/${encodeURIComponent(client.mac)}`}
+                className="client-card"
+              >
+                <div className="client-header">
+                  <div className="client-icon">{getDeviceIcon(client)}</div>
+                  <div className="client-name-section">
+                    <div className="client-name">
+                      {client.hostname || client.name || 'Unknown Device'}
+                    </div>
+                    {client.manufacturer && (
+                      <div className="client-manufacturer">{client.manufacturer}</div>
+                    )}
+                  </div>
+                  <div className={`client-status ${client.is_connected ? 'connected' : 'disconnected'}`}>
+                    <span className="status-dot"></span>
+                    {client.is_connected ? 'Connected' : 'Disconnected'}
+                  </div>
+                </div>
+                <div className="client-info">
+                  <div className="info-row">
+                    <span className="label">IP Address:</span>
+                    <span className="value">{client.ip || '-'}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="label">MAC Address:</span>
+                    <span className="value">{formatMacAddress(client.mac)}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="label">Connection:</span>
+                    <span className="value">
+                      {client.is_wired ? '🖥️ Wired' : '📡 Wireless'}
+                      {client.signal && !client.is_wired ? ` (${client.signal} dBm)` : ''}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span className="label">Traffic:</span>
+                    <span className="value">
+                      ↓ {formatBytes(client.rx_bytes)} / ↑ {formatBytes(client.tx_bytes)}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span className="label">Last Seen:</span>
+                    <span className="value">{formatTimeAgo(client.last_seen_ago)}</span>
+                  </div>
+                </div>
+              </Link>
+            ))
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Previously Connected Clients */}
-      {disconnectedClients.length > 0 && (
-        <div className="clients-section">
-          <h3 className="section-title">⚫ Previously Connected ({disconnectedClients.length})</h3>
-          <div className="clients-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Device</th>
-                  <th>Hostname</th>
-                  <th>MAC Address</th>
-                  <th>IP Address</th>
-                  <th>Type</th>
-                  <th>Manufacturer</th>
-                  <th>Signal</th>
-                  <th>Traffic</th>
-                  <th>Last Seen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {disconnectedClients.map((client) => (
-                  <tr key={client.mac} className="client-row disconnected">
-                    <td className="device-icon">{getDeviceIcon(client)}</td>
-                    <td className="hostname">
-                      {client.hostname || client.name || 'Unknown'}
-                    </td>
-                    <td className="mac">{formatMacAddress(client.mac)}</td>
-                    <td className="ip">{client.ip || '-'}</td>
-                    <td className="type">
-                      {client.is_wired ? (
-                        <span className="badge wired">Wired</span>
-                      ) : (
-                        <span className="badge wireless">Wireless</span>
-                      )}
-                    </td>
-                    <td className="manufacturer">{client.manufacturer || '-'}</td>
-                    <td className="signal">
-                      {client.signal && !client.is_wired ? `${client.signal} dBm` : '-'}
-                    </td>
-                    <td className="traffic">
-                      <div className="traffic-stats">
-                        <span title="Downloaded">↓ {formatBytes(client.rx_bytes)}</span>
-                        <span title="Uploaded">↑ {formatBytes(client.tx_bytes)}</span>
-                      </div>
-                    </td>
-                    <td className="last-seen">
-                      {formatTimeAgo(client.last_seen_ago)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {filteredClients.length === 0 && (
-        <div className="no-clients">
-          <p>No clients found{filterText ? ' matching your filter' : ''}.</p>
-          <p className="hint">Make sure the UniFi monitor is running and sending data to the server.</p>
+      {/* Last Updated Timestamp */}
+      {lastUpdated && (
+        <div className="last-updated">
+          Last updated: {lastUpdated.toLocaleTimeString()}
         </div>
       )}
     </div>

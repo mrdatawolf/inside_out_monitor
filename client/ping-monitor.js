@@ -91,38 +91,29 @@ async function pingHost(ip) {
   }
 }
 
-// Ping all targets
-async function pingAllTargets() {
-  console.log(`\n[${new Date().toISOString()}] Starting ping sweep...`);
-
-  const results = [];
-
-  for (const target of targets) {
-    const result = await pingHost(target.ip);
-    results.push({
-      ip: target.ip,
-      name: target.name || target.ip,
-      status: result.status,
-      response_time_ms: result.response_time_ms
-    });
-
-    const statusEmoji = result.status === 'online' ? '✓' : '✗';
-    const timeStr = result.response_time_ms !== null ? ` (${result.response_time_ms}ms)` : '';
-    console.log(`  ${statusEmoji} ${target.name || target.ip} [${target.ip}] - ${result.status}${timeStr}`);
-  }
-
-  return results;
+// Ping a single target and return result with metadata
+async function pingTarget(target) {
+  const result = await pingHost(target.ip);
+  return {
+    ip: target.ip,
+    name: target.name || target.ip,
+    status: result.status,
+    response_time_ms: result.response_time_ms
+  };
 }
 
-// Send ping results to server
+// Send ping results to server (can handle single or multiple results)
 async function sendPingResults(results) {
   try {
+    // Ensure results is an array
+    const resultsArray = Array.isArray(results) ? results : [results];
+
     // Create message
     const message = {
       type: 'ping',
       name: MONITOR_NAME,  // Changed from monitor_name to match server validation
       timestamp: Math.floor(Date.now() / 1000),
-      results: results
+      results: resultsArray
     };
 
     const messageJson = JSON.stringify(message);
@@ -153,7 +144,6 @@ async function sendPingResults(results) {
       });
     });
 
-    console.log(`[${new Date().toISOString()}] Ping results sent to ${SERVER_HOST}:${SERVER_PORT}`);
     return true;
   } catch (error) {
     console.error(`[${new Date().toISOString()}] ERROR: Failed to send ping results: ${error.message}`);
@@ -161,33 +151,60 @@ async function sendPingResults(results) {
   }
 }
 
-// Main monitoring loop
+// Monitor a single target on its own schedule
+async function monitorTarget(target) {
+  const interval = target.interval || INTERVAL;
+  let iteration = 0;
+
+  console.log(`[${target.name}] Starting monitor (interval: ${interval}s)`);
+
+  while (true) {
+    iteration++;
+    const timestamp = new Date().toISOString();
+
+    try {
+      const result = await pingTarget(target);
+
+      const statusEmoji = result.status === 'online' ? '✓' : '✗';
+      const timeStr = result.response_time_ms !== null ? ` (${result.response_time_ms}ms)` : '';
+      console.log(`[${timestamp}] ${statusEmoji} ${target.name} [${target.ip}] - ${result.status}${timeStr}`);
+
+      await sendPingResults(result);
+    } catch (error) {
+      console.error(`[${timestamp}] ERROR pinging ${target.name}: ${error.message}`);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, interval * 1000));
+  }
+}
+
+// Main entry point
 async function main() {
   console.log('='.repeat(60));
-  console.log('Inside-Out Monitor - Ping Monitor');
+  console.log('Inside-Out Monitor - Ping Monitor (Per-Target Intervals)');
   console.log('='.repeat(60));
   console.log(`Monitor Name: ${MONITOR_NAME}`);
   console.log(`Server: ${SERVER_HOST}:${SERVER_PORT}`);
   console.log(`Targets: ${targets.length}`);
-  console.log(`Interval: ${INTERVAL} seconds`);
+  console.log(`Default Interval: ${INTERVAL} seconds`);
   console.log('='.repeat(60));
+  console.log('\nTarget Configuration:');
 
-  let iteration = 0;
+  targets.forEach(target => {
+    const interval = target.interval || INTERVAL;
+    console.log(`  - ${target.name} [${target.ip}]: ${interval}s interval`);
+  });
 
-  while (true) {
-    iteration++;
-    console.log(`\n${'='.repeat(60)}`);
-    console.log(`Iteration ${iteration}`);
-    console.log('='.repeat(60));
+  console.log('\n' + '='.repeat(60));
+  console.log('Starting per-target monitoring...');
+  console.log('='.repeat(60) + '\n');
 
-    const results = await pingAllTargets();
-    await sendPingResults(results);
+  // Start a monitoring loop for each target
+  // Each target runs independently on its own schedule
+  const monitoringPromises = targets.map(target => monitorTarget(target));
 
-    const onlineCount = results.filter(r => r.status === 'online').length;
-    console.log(`\nSummary: ${onlineCount}/${results.length} targets online`);
-
-    await new Promise(resolve => setTimeout(resolve, INTERVAL * 1000));
-  }
+  // Wait for all monitoring loops (will run forever)
+  await Promise.all(monitoringPromises);
 }
 
 main().catch(error => {

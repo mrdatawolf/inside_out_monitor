@@ -44,6 +44,18 @@ const serverUdpPort = config.serverUrl.udpPort || 4000;
 const serverApiPort = config.serverUrl.apiPort || 3000;
 const apiUrl = `http://${serverHost}:${serverApiPort}`;
 
+// Load secret.key and convert to base64 for embedding
+let secretKeyBase64 = '';
+try {
+  const secretKeyPath = join(rootDir, 'dist', 'secret.key');
+  secretKeyBase64 = readFileSync(secretKeyPath, 'utf8').trim();
+  console.log('✅ Loaded secret.key for embedding');
+} catch (error) {
+  console.error('⚠️  Warning: Could not load dist/secret.key:', error.message);
+  console.error('   Executables will need secret.key file at runtime');
+  secretKeyBase64 = 'PLACEHOLDER_SECRET_KEY';
+}
+
 // Update dashboard/src/api.js
 const apiFilePath = join(rootDir, 'dashboard', 'src', 'api.js');
 try {
@@ -79,6 +91,12 @@ try {
     `let serverPort = ${serverUdpPort};`
   );
 
+  // Replace the embedded secret key
+  clientContent = clientContent.replace(
+    /let embeddedSecretKey = '.*?';/,
+    `let embeddedSecretKey = '${secretKeyBase64}';`
+  );
+
   writeFileSync(clientCliPath, clientContent, 'utf8');
   console.log(`✅ Updated client default server: ${serverHost}:${serverUdpPort}`);
 } catch (error) {
@@ -103,10 +121,82 @@ try {
     `let serverPort = ${serverUdpPort};`
   );
 
+  // Replace the embedded secret key
+  pingContent = pingContent.replace(
+    /let embeddedSecretKey = '.*?';/,
+    `let embeddedSecretKey = '${secretKeyBase64}';`
+  );
+
   writeFileSync(pingCliPath, pingContent, 'utf8');
   console.log(`✅ Updated ping-monitor default server: ${serverHost}:${serverUdpPort}`);
 } catch (error) {
   console.error('❌ Error updating client/ping-monitor-cli.js:', error.message);
+  process.exit(1);
+}
+
+// Update client/unifi-monitor.js
+const unifiPath = join(rootDir, 'client', 'unifi-monitor.js');
+try {
+  let unifiContent = readFileSync(unifiPath, 'utf8');
+
+  // Get UniFi config
+  const unifiConfig = config.unifi || {};
+  const unifiHost = unifiConfig.host || '';
+  const unifiPort = unifiConfig.port || 443;
+  const unifiUsername = unifiConfig.username || 'admin';
+  const unifiPassword = unifiConfig.password || '';
+  const unifiSite = unifiConfig.site || 'default';
+  const unifiInterval = unifiConfig.interval || 60;
+  const unifiIgnoreSsl = unifiConfig.ignoreSsl !== false;
+
+  // Replace UniFi configuration values
+  unifiContent = unifiContent.replace(
+    /let configServerHost = '.*?';/,
+    `let configServerHost = '${serverHost}';`
+  );
+  unifiContent = unifiContent.replace(
+    /let configServerPort = \d+;/,
+    `let configServerPort = ${serverUdpPort};`
+  );
+  unifiContent = unifiContent.replace(
+    /let configUnifiHost = '.*?';/,
+    `let configUnifiHost = '${unifiHost}';`
+  );
+  unifiContent = unifiContent.replace(
+    /let configUnifiPort = \d+;/,
+    `let configUnifiPort = ${unifiPort};`
+  );
+  unifiContent = unifiContent.replace(
+    /let configUnifiUsername = '.*?';/,
+    `let configUnifiUsername = '${unifiUsername}';`
+  );
+  unifiContent = unifiContent.replace(
+    /let configUnifiPassword = '.*?';/,
+    `let configUnifiPassword = '${unifiPassword}';`
+  );
+  unifiContent = unifiContent.replace(
+    /let configUnifiSite = '.*?';/,
+    `let configUnifiSite = '${unifiSite}';`
+  );
+  unifiContent = unifiContent.replace(
+    /let configUnifiInterval = \d+;/,
+    `let configUnifiInterval = ${unifiInterval};`
+  );
+  unifiContent = unifiContent.replace(
+    /let configUnifiIgnoreSsl = (true|false);/,
+    `let configUnifiIgnoreSsl = ${unifiIgnoreSsl};`
+  );
+
+  // Replace the embedded secret key
+  unifiContent = unifiContent.replace(
+    /let embeddedSecretKey = '.*?';/,
+    `let embeddedSecretKey = '${secretKeyBase64}';`
+  );
+
+  writeFileSync(unifiPath, unifiContent, 'utf8');
+  console.log(`✅ Updated unifi-monitor config: ${unifiHost || '(not configured)'}`);
+} catch (error) {
+  console.error('❌ Error updating client/unifi-monitor.js:', error.message);
   process.exit(1);
 }
 

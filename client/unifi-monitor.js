@@ -17,20 +17,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Main async function to handle top-level await
 (async () => {
 
-// Build-time config injection (replaced by esbuild --define during build)
-// These will be replaced with actual values from config.js
-const BUILD_CONFIG = typeof BUILD_CONFIG !== 'undefined' ? BUILD_CONFIG : {
-  SERVER_HOST: '127.0.0.1',
-  SERVER_PORT: 4000,
-  UNIFI_HOST: '',
-  UNIFI_PORT: 443,
-  UNIFI_USERNAME: 'admin',
-  UNIFI_PASSWORD: '',
-  UNIFI_SITE: 'default',
-  UNIFI_INTERVAL: 60,
-  UNIFI_IGNORE_SSL: true,
-  UNIFI_SERVER_PORT: 4000
-};
+// Configuration defaults (modified by inject-config.js during build)
+let embeddedSecretKey = 'DbOXvSqZ38D/vE5yrtp4haaJxHImFuicYFCj97BPBiI=';  // Injected during build from dist/secret.key
+let configServerHost = '192.168.203.241';
+let configServerPort = 4000;
+let configUnifiHost = '192.168.203.254';
+let configUnifiPort = 443;
+let configUnifiUsername = 'monitor';
+let configUnifiPassword = 'Ca9lifornia-';
+let configUnifiSite = 'default';
+let configUnifiInterval = 60;
+let configUnifiIgnoreSsl = true;
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -78,15 +75,15 @@ for (let i = 0; i < args.length; i += 2) {
 }
 
 // Configuration (command-line args override build-time config)
-const UNIFI_HOST = parsedArgs.host || BUILD_CONFIG.UNIFI_HOST;
-const UNIFI_PORT = parseInt(parsedArgs.port || BUILD_CONFIG.UNIFI_PORT);
-const UNIFI_USERNAME = parsedArgs.username || BUILD_CONFIG.UNIFI_USERNAME;
-const UNIFI_PASSWORD = parsedArgs.password || BUILD_CONFIG.UNIFI_PASSWORD;
-const UNIFI_SITE = parsedArgs.site || BUILD_CONFIG.UNIFI_SITE;
-const SERVER_HOST = parsedArgs.server || BUILD_CONFIG.SERVER_HOST;
-const SERVER_PORT = parseInt(parsedArgs['server-port'] || BUILD_CONFIG.UNIFI_SERVER_PORT);
-const POLL_INTERVAL = parseInt(parsedArgs.interval || BUILD_CONFIG.UNIFI_INTERVAL);
-const IGNORE_SSL = parsedArgs['ignore-ssl'] !== 'false' && BUILD_CONFIG.UNIFI_IGNORE_SSL;
+const UNIFI_HOST = parsedArgs.host || configUnifiHost;
+const UNIFI_PORT = parseInt(parsedArgs.port || configUnifiPort);
+const UNIFI_USERNAME = parsedArgs.username || configUnifiUsername;
+const UNIFI_PASSWORD = parsedArgs.password || configUnifiPassword;
+const UNIFI_SITE = parsedArgs.site || configUnifiSite;
+const SERVER_HOST = parsedArgs.server || configServerHost;
+const SERVER_PORT = parseInt(parsedArgs['server-port'] || configServerPort);
+const POLL_INTERVAL = parseInt(parsedArgs.interval || configUnifiInterval);
+const IGNORE_SSL = parsedArgs['ignore-ssl'] !== 'false' && configUnifiIgnoreSsl;
 
 // Validate configuration
 if (!UNIFI_HOST) {
@@ -103,22 +100,40 @@ if (!UNIFI_PASSWORD) {
   process.exit(1);
 }
 
-// Load pre-shared key
+// Load pre-shared key (use embedded key if available, otherwise load from file)
 let sharedKey;
-try {
-  const keyPath = join(__dirname, 'secret.key');
-  const keyBase64 = readFileSync(keyPath, 'utf8').trim();
-  sharedKey = decodeBase64(keyBase64);
-
-  if (sharedKey.length !== nacl.secretbox.keyLength) {
-    throw new Error(`Key must be ${nacl.secretbox.keyLength} bytes`);
+if (embeddedSecretKey && embeddedSecretKey !== 'PLACEHOLDER_SECRET_KEY') {
+  // Use embedded key (injected during build)
+  try {
+    sharedKey = decodeBase64(embeddedSecretKey);
+    if (sharedKey.length !== nacl.secretbox.keyLength) {
+      throw new Error(`Key must be ${nacl.secretbox.keyLength} bytes`);
+    }
+    console.log('✓ Using embedded secret key');
+  } catch (error) {
+    console.error('ERROR: Failed to decode embedded secret key');
+    console.error(`Error: ${error.message}`);
+    process.exit(1);
   }
+} else {
+  // Fall back to loading from file (development mode or build without key)
+  try {
+    const keyPath = join(__dirname, 'secret.key');
+    const keyBase64 = readFileSync(keyPath, 'utf8').trim();
+    sharedKey = decodeBase64(keyBase64);
 
-  console.log('✓ Pre-shared key loaded');
-} catch (error) {
-  console.error('ERROR: Failed to load secret.key');
-  console.error('Copy server/secret.key to client/secret.key');
-  process.exit(1);
+    if (sharedKey.length !== nacl.secretbox.keyLength) {
+      throw new Error(`Key must be ${nacl.secretbox.keyLength} bytes`);
+    }
+
+    console.log('✓ Loaded secret.key from file');
+  } catch (error) {
+    console.error('ERROR: Failed to load secret.key');
+    console.error('Place secret.key in the script directory');
+    console.error('Or rebuild with secret.key in dist/ to embed it');
+    console.error(`Error: ${error.message}`);
+    process.exit(1);
+  }
 }
 
 // Initialize UniFi API client

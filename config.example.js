@@ -36,7 +36,9 @@ export default {
 
   // Ping Monitor Configuration
   ping: {
-    defaultInterval: 60,     // Default ping interval (seconds)
+    defaultInterval: 60,     // Default ping interval (seconds) - used as fallback
+                             // Note: Each target in ping-targets.json can override this
+                             // with its own interval (minimum: 1 second)
     timeout: 5000,           // Ping timeout in milliseconds
     defaultServerPort: 4000  // Default server port to report to
   },

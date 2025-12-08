@@ -54,8 +54,10 @@ Traditional monitoring systems actively poll devices from a central location. In
 #### Ping Monitor (`ping-monitor-cli.js`)
 - Pings configured targets (printers, switches, cameras, etc.)
 - Sends aggregated ping results to server
-- Default interval: 60 seconds
+- **Per-target configurable intervals**: Each target can have its own ping frequency (1-N seconds)
+- Default interval: 60 seconds (if not specified per-target)
 - Reports: target status (online/offline), response times
+- **Flexible monitoring**: Critical infrastructure can be checked every 1-5 seconds, while less critical devices use longer intervals
 
 **Executables:**
 - `dist/monitor-client-win.exe` - Heartbeat client
@@ -532,24 +534,49 @@ inside_out_monitor/
 
 **Security Note:** Keep this file secure. Anyone with the key can decrypt all traffic and forge messages.
 
-### `config.js` (Ping Monitor)
-**Location:** `dist/config.js`
-**Format:** JavaScript module
-**Purpose:** Configure ping targets
+### `ping-targets.json` (Ping Monitor)
+**Location:** `dist/ping-targets.json` or `client/ping-targets.json.example`
+**Format:** JSON configuration file
+**Purpose:** Configure ping targets with per-target intervals
 
 **Example:**
-```javascript
-export default {
-  targets: [
-    { ip: '192.168.203.42', name: 'Tech Printer Lexmark' },
-    { ip: '192.168.203.199', name: 'Front Printer HP' },
-    { ip: '192.168.203.159', name: 'Testing Camera' }
+```json
+{
+  "targets": [
+    {
+      "ip": "192.168.203.42",
+      "name": "Tech Printer Lexmark",
+      "interval": 60
+    },
+    {
+      "ip": "192.168.203.199",
+      "name": "Front Printer HP",
+      "interval": 60
+    },
+    {
+      "ip": "192.168.203.159",
+      "name": "Testing Camera",
+      "interval": 30
+    },
+    {
+      "ip": "192.168.203.102",
+      "name": "Network Switch",
+      "interval": 5
+    }
   ],
-  serverHost: '127.0.0.1',
-  serverPort: 4000,
-  pingInterval: 60000  // milliseconds
-};
+  "_comment": "Interval is in seconds. Minimum: 1 second, Default: 60 seconds. Each target can have its own interval."
+}
 ```
+
+**Per-Target Interval Feature:**
+- Each target can have a custom `interval` field (in seconds)
+- Minimum interval: 1 second
+- Default interval: 60 seconds (if not specified)
+- Critical devices (switches, routers) can be monitored more frequently (e.g., 5-10 seconds)
+- Less critical devices (printers, cameras) can use longer intervals (e.g., 60-120 seconds)
+- This allows efficient resource usage while maintaining appropriate monitoring frequency per device
+
+**Note:** The global `--interval` command-line parameter is used as a fallback for targets without an explicit interval.
 
 ## Developer Guidelines
 

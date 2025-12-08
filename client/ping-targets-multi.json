@@ -1,0 +1,19 @@
+{
+  "targets": [
+    {
+      "ip": "127.0.0.1",
+      "name": "Fast-Check-1s",
+      "interval": 1
+    },
+    {
+      "ip": "127.0.0.1",
+      "name": "Medium-Check-3s",
+      "interval": 3
+    },
+    {
+      "ip": "127.0.0.1",
+      "name": "Slow-Check-5s",
+      "interval": 5
+    }
+  ]
+}
