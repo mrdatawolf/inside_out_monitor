@@ -25,7 +25,11 @@
       "Bash(npm run build:dashboard:win:*)",
       "Bash(if exist serveralerting-config.example.js del serveralerting-config.example.js)",
       "Bash(npm start)",
-      "Bash(copy servernode_modulessql.jsdistsql-wasm.wasm serversql-wasm.wasm)"
+      "Bash(copy servernode_modulessql.jsdistsql-wasm.wasm serversql-wasm.wasm)",
+      "Bash(npm run test:unifi:*)",
+      "Bash(npm run test:unifi:sites:*)",
+      "Bash(npm run build:unifi:win:*)",
+      "Bash(npm run bundle:*)"
     ],
     "deny": [],
     "ask": []

@@ -12,6 +12,7 @@ import dgram from 'dgram';
 import nacl from 'tweetnacl';
 import util from 'tweetnacl-util';
 import { initDb, insertHeartbeat, insertPingResults } from './db.js';
+import { initUnifiDb, insertUnifiClients } from './unifi-db.js';
 import { startApi } from './api.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -126,7 +127,8 @@ function validateMessage(message) {
     throw new Error(`Message too old: ${age}s (max: ${maxMessageAge}s)`);
   }
 
-  if (!message.name || typeof message.name !== 'string') {
+  // UniFi messages don't have a 'name' field, they have 'clients'
+  if (message.type !== 'unifi' && (!message.name || typeof message.name !== 'string')) {
     throw new Error('Invalid device name');
   }
 
@@ -140,6 +142,11 @@ async function startServer() {
     console.log('Initializing database...');
     await initDb();
     console.log('Database initialized');
+
+    // Initialize UniFi database
+    console.log('Initializing UniFi database...');
+    await initUnifiDb();
+    console.log('UniFi database initialized');
 
     // Create UDP server
     const server = dgram.createSocket('udp4');
@@ -169,6 +176,17 @@ async function startServer() {
             message.results || []
           );
           console.log(`[${new Date().toISOString()}] Ping results from ${message.name} (${rinfo.address}:${rinfo.port}) - ${message.results?.length || 0} targets`);
+        } else if (message.type === 'unifi') {
+          // Handle UniFi client data
+          if (!message.clients || !Array.isArray(message.clients)) {
+            console.log(`[${new Date().toISOString()}] Invalid UniFi payload from ${rinfo.address}:${rinfo.port} - missing clients array`);
+            return;
+          }
+          insertUnifiClients(message.clients, message.timestamp);
+          const connectedCount = message.clients.length;
+          const wiredCount = message.clients.filter(c => c.is_wired).length;
+          const wirelessCount = connectedCount - wiredCount;
+          console.log(`[${new Date().toISOString()}] UniFi clients (${rinfo.address}:${rinfo.port}) - ${connectedCount} total, ${wiredCount} wired, ${wirelessCount} wireless`);
         } else {
           // Handle regular heartbeat
           await insertHeartbeat(

@@ -17,11 +17,18 @@ import { getNetworkInterfaces } from './network-stats.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Build-time config injection (replaced by esbuild --define during build)
+// These will be replaced with actual values from config.js
+const BUILD_CONFIG = typeof BUILD_CONFIG !== 'undefined' ? BUILD_CONFIG : {
+  SERVER_HOST: '127.0.0.1',
+  SERVER_PORT: 4000
+};
+
 // Parse command line arguments
 const args = process.argv.slice(2);
 let deviceName = os.hostname();
-let serverHost = '192.168.203.241';
-let serverPort = 4000;
+let serverHost = BUILD_CONFIG.SERVER_HOST;
+let serverPort = BUILD_CONFIG.SERVER_PORT;
 let interval = 0;
 
 // Parse arguments
@@ -51,8 +58,8 @@ Usage: monitor-client [options]
 
 Options:
   -n, --name <name>        Device name (default: hostname)
-  -h, --host <host>        Server hostname or IP (default: 127.0.0.1)
-  -p, --port <port>        Server UDP port (default: 4000)
+  -h, --host <host>        Server hostname or IP (default: from config.js)
+  -p, --port <port>        Server UDP port (default: from config.js)
   -i, --interval <seconds> Send heartbeat every N seconds (0 = run once)
   --help                   Show this help message
 
