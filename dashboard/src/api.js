@@ -65,3 +65,28 @@ export async function fetchPingStats() {
   if (!response.ok) throw new Error('Failed to fetch ping stats');
   return response.json();
 }
+
+// UniFi monitoring endpoints
+export async function fetchUnifiClients() {
+  const response = await fetch(`${API_BASE}/unifi/clients`);
+  if (!response.ok) throw new Error('Failed to fetch UniFi clients');
+  return response.json();
+}
+
+export async function fetchUnifiClient(mac) {
+  const response = await fetch(`${API_BASE}/unifi/clients/${encodeURIComponent(mac)}`);
+  if (!response.ok) throw new Error('Failed to fetch UniFi client');
+  return response.json();
+}
+
+export async function fetchUnifiClientHistory(mac, hours = 24) {
+  const response = await fetch(`${API_BASE}/unifi/clients/${encodeURIComponent(mac)}/history?hours=${hours}`);
+  if (!response.ok) throw new Error('Failed to fetch UniFi client history');
+  return response.json();
+}
+
+export async function fetchUnifiStats() {
+  const response = await fetch(`${API_BASE}/unifi/stats`);
+  if (!response.ok) throw new Error('Failed to fetch UniFi stats');
+  return response.json();
+}

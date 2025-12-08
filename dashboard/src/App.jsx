@@ -4,20 +4,26 @@ import Dashboard from './components/Dashboard'
 import DeviceDetail from './components/DeviceDetail'
 import PingMonitor from './components/PingMonitor'
 import PingTargetDetail from './components/PingTargetDetail'
+import UniFiClients from './components/UniFiClients'
 import { API_URL } from './api'
 import './App.css'
 
 function Navigation() {
   const location = useLocation()
+  const isHeartbeatRoute = location.pathname === '/' || location.pathname.startsWith('/device/')
   const isPingRoute = location.pathname.startsWith('/ping')
+  const isUnifiRoute = location.pathname.startsWith('/unifi')
 
   return (
     <nav className="app-nav">
-      <Link to="/" className={!isPingRoute ? 'active' : ''}>
+      <Link to="/" className={isHeartbeatRoute ? 'active' : ''}>
         Heartbeats
       </Link>
       <Link to="/ping" className={isPingRoute ? 'active' : ''}>
         Ping Monitoring
+      </Link>
+      <Link to="/unifi" className={isUnifiRoute ? 'active' : ''}>
+        Dreaming
       </Link>
     </nav>
   )
@@ -47,11 +53,12 @@ function App() {
             <Route path="/device/:name" element={<DeviceDetail />} />
             <Route path="/ping" element={<PingMonitor />} />
             <Route path="/ping/:ip" element={<PingTargetDetail />} />
+            <Route path="/unifi" element={<UniFiClients />} />
           </Routes>
         </main>
 
         <footer className="app-footer">
-          <p>Phase 3: Frontend Dashboard • Real-time monitoring</p>
+          <p>Phase 6: UniFi Integration • Real-time network monitoring</p>
         </footer>
       </div>
     </BrowserRouter>

@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { getDb } from './db.js';
+import { getUnifiDb } from './unifi-db.js';
 
 const app = express();
 const API_PORT = 3000;
@@ -423,10 +424,225 @@ app.get('/api/ping-stats', (req, res) => {
   }
 });
 
+// GET /api/unifi/clients - Get all UniFi clients (currently connected + previously seen)
+app.get('/api/unifi/clients', (req, res) => {
+  try {
+    const db = getUnifiDb();
+    if (!db) {
+      return res.status(503).json({ error: 'UniFi database not initialized' });
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+
+    // Get all unique clients with their latest state
+    const result = db.exec(`
+      SELECT
+        cs.mac,
+        cs.hostname,
+        cs.ip,
+        cs.is_connected,
+        cs.last_seen,
+        c.manufacturer,
+        c.device_type,
+        c.is_wired,
+        c.signal,
+        c.rx_bytes,
+        c.tx_bytes
+      FROM unifi_client_states cs
+      LEFT JOIN (
+        SELECT mac, manufacturer, device_type, is_wired, signal, rx_bytes, tx_bytes
+        FROM unifi_clients
+        WHERE id IN (
+          SELECT MAX(id)
+          FROM unifi_clients
+          GROUP BY mac
+        )
+      ) c ON cs.mac = c.mac
+      ORDER BY cs.is_connected DESC, cs.last_seen DESC
+    `);
+
+    const clients = sqlToJson(result).map(client => ({
+      ...client,
+      is_connected: client.is_connected === 1,
+      is_wired: client.is_wired === 1,
+      last_seen_ago: now - client.last_seen
+    }));
+
+    res.json({ clients });
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/unifi/clients/:mac - Get specific client details
+app.get('/api/unifi/clients/:mac', (req, res) => {
+  try {
+    const db = getUnifiDb();
+    if (!db) {
+      return res.status(503).json({ error: 'UniFi database not initialized' });
+    }
+
+    const mac = req.params.mac;
+
+    // Get client state
+    const stateResult = db.exec(`
+      SELECT * FROM unifi_client_states WHERE mac = ?
+    `, [mac]);
+
+    if (!stateResult || stateResult.length === 0) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+
+    const state = sqlToJson(stateResult)[0];
+
+    // Get latest client details
+    const detailsResult = db.exec(`
+      SELECT * FROM unifi_clients
+      WHERE mac = ?
+      ORDER BY received_at DESC
+      LIMIT 1
+    `, [mac]);
+
+    const details = detailsResult && detailsResult.length > 0 ?
+      sqlToJson(detailsResult)[0] : {};
+
+    // Get connection events
+    const eventsResult = db.exec(`
+      SELECT * FROM unifi_connection_events
+      WHERE mac = ?
+      ORDER BY timestamp DESC
+      LIMIT 50
+    `, [mac]);
+
+    const events = sqlToJson(eventsResult);
+
+    const now = Math.floor(Date.now() / 1000);
+    res.json({
+      client: {
+        ...state,
+        ...details,
+        is_connected: state.is_connected === 1,
+        is_wired: details.is_wired === 1,
+        last_seen_ago: now - state.last_seen,
+        events
+      }
+    });
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/unifi/clients/:mac/history - Get client connection history
+app.get('/api/unifi/clients/:mac/history', (req, res) => {
+  try {
+    const db = getUnifiDb();
+    if (!db) {
+      return res.status(503).json({ error: 'UniFi database not initialized' });
+    }
+
+    const mac = req.params.mac;
+    const hours = parseInt(req.query.hours) || 24;
+    const limit = parseInt(req.query.limit) || 100;
+
+    const sinceTimestamp = Math.floor(Date.now() / 1000) - (hours * 3600);
+
+    const result = db.exec(`
+      SELECT
+        received_at,
+        rx_bytes,
+        tx_bytes,
+        rx_rate,
+        tx_rate,
+        signal
+      FROM unifi_clients
+      WHERE mac = ? AND received_at > ?
+      ORDER BY received_at DESC
+      LIMIT ?
+    `, [mac, sinceTimestamp, limit]);
+
+    const history = sqlToJson(result);
+
+    res.json({ history });
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/unifi/stats - UniFi monitoring statistics
+app.get('/api/unifi/stats', (req, res) => {
+  try {
+    const db = getUnifiDb();
+    if (!db) {
+      return res.status(503).json({ error: 'UniFi database not initialized' });
+    }
+
+    // Total clients (ever seen)
+    const totalResult = db.exec(`
+      SELECT COUNT(DISTINCT mac) as count
+      FROM unifi_client_states
+    `);
+    const totalClients = sqlToJson(totalResult)[0]?.count || 0;
+
+    // Currently connected clients
+    const connectedResult = db.exec(`
+      SELECT COUNT(*) as count
+      FROM unifi_client_states
+      WHERE is_connected = 1
+    `);
+    const connectedClients = sqlToJson(connectedResult)[0]?.count || 0;
+
+    // Wired vs wireless breakdown
+    const typeResult = db.exec(`
+      SELECT
+        SUM(CASE WHEN c.is_wired = 1 THEN 1 ELSE 0 END) as wired,
+        SUM(CASE WHEN c.is_wired = 0 THEN 1 ELSE 0 END) as wireless
+      FROM unifi_client_states cs
+      JOIN (
+        SELECT mac, is_wired
+        FROM unifi_clients
+        WHERE id IN (
+          SELECT MAX(id)
+          FROM unifi_clients
+          GROUP BY mac
+        )
+      ) c ON cs.mac = c.mac
+      WHERE cs.is_connected = 1
+    `);
+    const types = sqlToJson(typeResult)[0] || { wired: 0, wireless: 0 };
+
+    // Total snapshots recorded
+    const snapshotsResult = db.exec(`
+      SELECT COUNT(*) as count
+      FROM unifi_clients
+    `);
+    const totalSnapshots = sqlToJson(snapshotsResult)[0]?.count || 0;
+
+    res.json({
+      stats: {
+        total_clients: totalClients,
+        connected_clients: connectedClients,
+        disconnected_clients: totalClients - connectedClients,
+        wired_clients: types.wired || 0,
+        wireless_clients: types.wireless || 0,
+        total_snapshots: totalSnapshots
+      }
+    });
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/health', (req, res) => {
   const db = getDb();
+  const unifiDb = getUnifiDb();
   res.json({
-    status: db ? 'ok' : 'error',
+    status: (db && unifiDb) ? 'ok' : 'error',
+    heartbeat_db: db ? 'ok' : 'error',
+    unifi_db: unifiDb ? 'ok' : 'error',
     timestamp: Math.floor(Date.now() / 1000)
   });
 });
@@ -447,6 +663,11 @@ export function startApi(port = API_PORT) {
     console.log(`       GET /api/ping-targets`);
     console.log(`       GET /api/ping-targets/:ip/history`);
     console.log(`       GET /api/ping-stats`);
+    console.log(`     UniFi Monitoring Endpoints:`);
+    console.log(`       GET /api/unifi/clients`);
+    console.log(`       GET /api/unifi/clients/:mac`);
+    console.log(`       GET /api/unifi/clients/:mac/history`);
+    console.log(`       GET /api/unifi/stats`);
     console.log(`     Health:`);
     console.log(`       GET /api/health\n`);
   });

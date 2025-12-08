@@ -2,6 +2,7 @@ import dgram from 'dgram';
 import nacl from 'tweetnacl';
 import util from 'tweetnacl-util';
 import { initDb, insertHeartbeat, insertPingResults } from './db.js';
+import { initUnifiDb, insertUnifiClients } from './unifi-db.js';
 import { startApi } from './api.js';
 import { initAlerting, stopAlerting } from './alerting.js';
 import { readFileSync } from 'fs';
@@ -21,6 +22,9 @@ const MAX_MESSAGE_AGE = 300; // 5 minutes in seconds
 async function startServer() {
   // Initialize database
   await initDb();
+
+  // Initialize UniFi database
+  await initUnifiDb();
 
   // Initialize alerting system if enabled
   if (config.alerting && config.alerting.enabled) {
@@ -98,6 +102,21 @@ async function startServer() {
 
         const onlineCount = message.results.filter(r => r.status === 'online').length;
         console.log(`✓ Ping results from ${message.monitor_name} [age: ${age}s, targets: ${message.results.length}, online: ${onlineCount}]`);
+
+      } else if (message.type === 'unifi') {
+        // UniFi monitor message
+        if (!message.clients || !Array.isArray(message.clients)) {
+          console.log(`⚠ Invalid UniFi payload from ${rinfo.address}:${rinfo.port} - missing clients array`);
+          return;
+        }
+
+        // Store UniFi client data
+        insertUnifiClients(message.clients, deviceTimestamp);
+
+        const connectedCount = message.clients.length;
+        const wiredCount = message.clients.filter(c => c.is_wired).length;
+        const wirelessCount = connectedCount - wiredCount;
+        console.log(`✓ UniFi clients [age: ${age}s, total: ${connectedCount}, wired: ${wiredCount}, wireless: ${wirelessCount}]`);
 
       } else {
         // Heartbeat message (default/legacy)

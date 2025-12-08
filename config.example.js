@@ -41,6 +41,19 @@ export default {
     defaultServerPort: 4000  // Default server port to report to
   },
 
+  // UniFi Monitor Configuration (Phase 6)
+  unifi: {
+    enabled: false,          // Set to true to enable UniFi monitoring
+    host: 'YOUR_UNIFI_HOST', // UniFi Dream Router IP or hostname
+    port: 443,               // HTTPS port (443 for UniFi OS devices)
+    username: 'admin',       // Local admin username
+    password: '',            // Local admin password
+    site: 'default',         // Site name (usually 'default')
+    interval: 60,            // Poll interval in seconds
+    ignoreSsl: true,         // Ignore SSL certificate errors (for self-signed certs)
+    defaultServerPort: 4000  // Server port to report to
+  },
+
   // File Paths (relative to executable location)
   paths: {
     secretKey: './secret.key',
