@@ -5,6 +5,7 @@ import DeviceDetail from './components/DeviceDetail'
 import PingMonitor from './components/PingMonitor'
 import PingTargetDetail from './components/PingTargetDetail'
 import UniFiClients from './components/UniFiClients'
+import UniFiClientDetail from './components/UniFiClientDetail'
 import { API_URL } from './api'
 import './App.css'
 
@@ -54,6 +55,7 @@ function App() {
             <Route path="/ping" element={<PingMonitor />} />
             <Route path="/ping/:ip" element={<PingTargetDetail />} />
             <Route path="/unifi" element={<UniFiClients />} />
+            <Route path="/unifi/client/:mac" element={<UniFiClientDetail />} />
           </Routes>
         </main>
 
