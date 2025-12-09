@@ -724,300 +724,270 @@ dist/monitor-dashboard-win.exe
 3. **Run server in isolated network segment** (defense in depth)
 4. **Monitor database size** (implement cleanup for old data)
 
-## Phase 5: Alerting System (Planned)
+## Phase 5: Alerting System (Complete)
 
 Real-time webhook notifications when devices or network equipment change status.
+
+### Features Implemented
+
+**Alert Detection:**
+- ✅ Status change detection for heartbeat devices (online/offline transitions)
+- ✅ Status change detection for ping targets (reachable/unreachable)
+- ✅ New device/target detection
+- ✅ Debouncing logic to prevent alert spam
+- ✅ Grace period for brief outages
+- ✅ Cooldown periods to prevent alert fatigue
+
+**Webhook Integrations:**
+- ✅ Discord webhooks with rich embeds and color coding
+- ✅ Microsoft Teams webhooks with MessageCard format
+- ✅ Configurable device/target filtering with wildcards
+- ✅ Event type filtering (online, offline, new device, etc.)
+- ✅ Optional @mentions for Discord alerts
+
+**Alert Management:**
+- ✅ Alert queue system with batching
+- ✅ Alert logging to database
+- ✅ Background monitoring service
+- ✅ Configurable check intervals
+- ✅ Pattern-based filtering (e.g., "router-*")
+
+### Database Schema
+
+**Tables Added:**
+```sql
+CREATE TABLE device_states (
+  device_name TEXT PRIMARY KEY,
+  status TEXT NOT NULL,              -- 'online' or 'offline'
+  last_seen INTEGER NOT NULL,        -- Unix timestamp
+  last_status_change INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE ping_target_states (
+  target_ip TEXT PRIMARY KEY,
+  target_name TEXT,
+  monitor_name TEXT NOT NULL,
+  status TEXT NOT NULL,              -- 'online' or 'offline'
+  last_check INTEGER NOT NULL,
+  last_status_change INTEGER NOT NULL,
+  response_time_ms REAL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE alert_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  alert_type TEXT NOT NULL,
+  entity_type TEXT NOT NULL,         -- 'device' or 'ping_target'
+  entity_name TEXT NOT NULL,
+  event_type TEXT NOT NULL,          -- 'online', 'offline', 'new_device', etc.
+  webhook_type TEXT NOT NULL,        -- 'discord' or 'teams'
+  webhook_name TEXT NOT NULL,
+  sent_at INTEGER NOT NULL,
+  status TEXT NOT NULL,              -- 'sent' or 'failed'
+  error_message TEXT
+);
+```
+
+### Files Added
+- `server/alerting.js` - Core alerting engine
+- `server/webhooks/discord.js` - Discord webhook client
+- `server/webhooks/teams.js` - Microsoft Teams webhook client
+- `ALERTING.md` - Complete documentation
+
+See [ALERTING.md](../ALERTING.md) for complete setup and configuration guide.
+
+## Phase 6: UniFi Network Monitoring (Complete)
+
+Integration with Ubiquiti UniFi network controllers to monitor all connected clients (wireless and wired) on the network.
 
 ### Architecture Overview
 
 ```
-┌─────────────────┐
-│  Monitor Server │
-│                 │
-│  ┌───────────┐  │     Webhooks
-│  │ Heartbeat │  │        │
-│  │  Handler  │  │        ▼
-│  └─────┬─────┘  │   ┌──────────────┐
-│        │        │   │   Discord    │
-│  ┌─────▼─────┐  │   │   Channel    │
-│  │  Alert    │──┼──▶└──────────────┘
-│  │  Engine   │  │        │
-│  └─────┬─────┘  │        ▼
-│        │        │   ┌──────────────┐
-│  ┌─────▼─────┐  │   │ Teams Channel│
-│  │  Status   │  │   │  (Adaptive   │
-│  │  Tracker  │  │   │   Cards)     │
-│  └───────────┘  │   └──────────────┘
-└─────────────────┘
+┌─────────────────────┐                          ┌──────────────────┐
+│  UniFi Controller   │                          │  Monitor Server  │
+│  (Dream Router)     │                          │                  │
+│                     │                          │  ┌────────────┐  │
+│  • Wireless Clients │◀──── HTTPS API ─────────│  │   UniFi    │  │
+│  • Wired Clients    │      (443)              │  │  Monitor   │  │
+│  • IoT Devices      │                          │  └─────┬──────┘  │
+│  • Connection Stats │                          │        │         │
+└─────────────────────┘                          │  ┌─────▼──────┐  │
+                                                 │  │   UniFi    │  │
+                                                 │  │  Database  │  │
+                                                 │  └────────────┘  │
+                                                 └──────────────────┘
+                                                          │
+                                                          │ HTTP API
+                                                          │ (Port 3000)
+                                                          ▼
+                                                 ┌──────────────────┐
+                                                 │  Web Dashboard   │
+                                                 │  UniFi Clients   │
+                                                 │  Component       │
+                                                 └──────────────────┘
 ```
 
-### Step 1: Alert Detection System
+### Features Implemented
 
-**Components:**
+**UniFi Monitor Client** (`client/unifi-monitor.js`)
+- ✅ Authenticates with UniFi Controller API
+- ✅ Polls connected clients at configurable intervals
+- ✅ Collects client details: MAC, IP, hostname, device type
+- ✅ Tracks traffic statistics (RX/TX bytes, rates)
+- ✅ Monitors wireless signal strength and channel info
+- ✅ Encrypts and sends data to monitor server via UDP
+- ✅ Supports UniFi Dream Router, UDM Pro, and UniFi OS controllers
+- ✅ SSL certificate validation bypass for self-signed certs
 
-1. **Status Monitor Service** (`server/alerting.js`)
-   - Background service running in server process
-   - Polls database every 60 seconds (configurable)
-   - Compares current state with last known state
-   - Triggers alerts on state transitions
+**UniFi API Client** (`client/unifi-api.js`)
+- ✅ Complete UniFi Controller REST API wrapper
+- ✅ Session management with cookie/CSRF token handling
+- ✅ Active client enumeration
+- ✅ Device type detection (wired, wireless, IoT, Apple, Android)
+- ✅ Connection testing and health checks
+- ✅ Manufacturer identification via OUI lookup
 
-2. **State Tracking Database Table**
-   ```sql
-   CREATE TABLE device_status (
-     device_name TEXT PRIMARY KEY,
-     device_type TEXT NOT NULL,  -- 'heartbeat' or 'ping_target'
-     last_status TEXT NOT NULL,  -- 'online' or 'offline'
-     last_change INTEGER NOT NULL,  -- Unix timestamp of last status change
-     last_alert_sent INTEGER  -- Unix timestamp of last alert sent
-   );
-   ```
+**Server-Side Processing** (`server/unifi-db.js`)
+- ✅ Dedicated UniFi SQLite database
+- ✅ Client snapshot storage with full historical data
+- ✅ Connection state tracking (online/offline transitions)
+- ✅ Connection event logging (connected/disconnected events)
+- ✅ Automatic stale client detection
+- ✅ Auto-save mechanism every 5 minutes
 
-3. **Debouncing Logic**
-   - Grace period before triggering alert (prevents flapping)
-   - Cooldown period between repeated alerts for same device
-   - Configurable thresholds per device type
+**Dashboard Integration** (`dashboard/src/components/UniFiClients.jsx`)
+- ✅ Real-time client list with auto-refresh (5s interval)
+- ✅ Connection status indicators (connected/disconnected)
+- ✅ Client filtering by hostname, MAC, IP, manufacturer
+- ✅ Device type filtering (all, wired, wireless)
+- ✅ Device icons based on type (🍎 Apple, 📱 Android, 💡 IoT, 🖥️ Wired, 📡 Wireless)
+- ✅ Traffic statistics display (RX/TX bytes)
+- ✅ Wireless signal strength display
+- ✅ Client detail view with connection history
+- ✅ Statistics overview (total clients, connected, wired/wireless)
 
-**Detection Logic:**
-- Device offline: No heartbeat received in > 10 minutes
-- Device online: Heartbeat received after being offline
-- Ping target offline: Latest ping status = 'offline'
-- Ping target online: Ping status changes from 'offline' to 'online'
+### Database Schema
 
-### Step 2: Webhook Integrations
-
-**Discord Webhook Format:**
-```javascript
-{
-  embeds: [{
-    title: "🔴 Device Offline Alert",
-    description: "SERVER-PROD-01 has gone offline",
-    color: 0xEF4444,  // Red for offline, 0x22C55E for online
-    fields: [
-      { name: "Device", value: "SERVER-PROD-01", inline: true },
-      { name: "Last Seen", value: "5 minutes ago", inline: true },
-      { name: "Status", value: "Offline", inline: true }
-    ],
-    timestamp: new Date().toISOString(),
-    footer: { text: "Inside-Out Monitor" }
-  }]
-}
-```
-
-**Microsoft Teams Adaptive Card:**
-```json
-{
-  "@type": "MessageCard",
-  "@context": "https://schema.org/extensions",
-  "summary": "Device Offline Alert",
-  "themeColor": "EF4444",
-  "title": "🔴 Device Offline Alert",
-  "sections": [{
-    "activityTitle": "SERVER-PROD-01 has gone offline",
-    "facts": [
-      { "name": "Device", "value": "SERVER-PROD-01" },
-      { "name": "Last Seen", "value": "5 minutes ago" },
-      { "name": "Status", "value": "Offline" }
-    ]
-  }],
-  "potentialAction": [{
-    "@type": "OpenUri",
-    "name": "View in Dashboard",
-    "targets": [{
-      "os": "default",
-      "uri": "http://192.168.203.241:8080/device/SERVER-PROD-01"
-    }]
-  }]
-}
-```
-
-**Webhook Manager** (`server/webhooks/manager.js`)
-- Queue system to batch multiple alerts
-- Retry logic with exponential backoff
-- Rate limiting (Discord: 30 requests/minute, Teams: varies)
-- Error handling and logging
-
-### Step 3: Alert Configuration
-
-**Configuration File** (`server/alerting-config.js`):
-```javascript
-export default {
-  // Enable/disable alerting globally
-  enabled: true,
-
-  // Monitoring intervals
-  checkIntervalSeconds: 60,  // How often to check for status changes
-
-  // Thresholds
-  heartbeatOfflineThresholdSeconds: 600,  // 10 minutes
-  pingOfflineThresholdSeconds: 300,  // 5 minutes
-
-  // Debouncing
-  gracePeriodSeconds: 120,  // Wait 2 min before first alert
-  cooldownPeriodSeconds: 1800,  // Wait 30 min between repeated alerts
-
-  // Batching
-  batchDelaySeconds: 30,  // Batch alerts within 30 seconds
-
-  // Discord webhooks
-  discord: [
-    {
-      name: "IT Alerts",
-      url: "https://discord.com/api/webhooks/...",
-      enabled: true,
-      devices: {
-        heartbeat: ["*"],  // All heartbeat devices
-        ping: ["router-*", "switch-*"]  // Only network gear
-      },
-      events: ["offline", "online", "new_device"],
-      mentionRoles: ["123456789"],  // Discord role IDs to @mention
-      severityThreshold: "warning"  // info, warning, critical
-    }
-  ],
-
-  // Microsoft Teams webhooks
-  teams: [
-    {
-      name: "Network Monitoring",
-      url: "https://outlook.office.com/webhook/...",
-      enabled: true,
-      devices: {
-        heartbeat: ["server-*", "database-*"],
-        ping: ["*"]
-      },
-      events: ["offline"],  // Only alert on failures
-      severityThreshold: "critical"
-    }
-  ],
-
-  // Device-specific overrides
-  deviceOverrides: {
-    "test-server": {
-      enabled: false  // Don't alert for this device
-    },
-    "critical-db-01": {
-      gracePeriodSeconds: 60,  // Alert faster for critical systems
-      cooldownPeriodSeconds: 600  // More frequent alerts
-    }
-  },
-
-  // Maintenance windows (suppress alerts during scheduled maintenance)
-  maintenanceWindows: [
-    {
-      name: "Weekly Maintenance",
-      devices: ["server-*"],
-      schedule: {
-        dayOfWeek: 0,  // Sunday
-        startTime: "02:00",
-        endTime: "04:00",
-        timezone: "America/New_York"
-      }
-    }
-  ]
-}
-```
-
-### Alert Types
-
-**1. Heartbeat Device Alerts**
-- `device.offline` - No heartbeat received in threshold period
-- `device.online` - Device resumes sending heartbeats
-- `device.new` - New device detected (first heartbeat ever)
-
-**2. Ping Target Alerts**
-- `ping.target.offline` - Ping target becomes unreachable
-- `ping.target.online` - Ping target recovers
-- `ping.target.slow` - Response time exceeds threshold (future)
-
-**3. System Alerts**
-- `server.started` - Monitor server started
-- `server.stopped` - Monitor server shutting down (graceful)
-- `database.error` - Database operation failed
-- `alert.storm` - Too many alerts in short period (possible monitoring issue)
-
-### Implementation Files
-
-**New Files:**
-```
-server/
-├── alerting.js              # Core alerting engine
-├── alerting-config.js       # User configuration (gitignored)
-├── alerting-config.example.js  # Configuration template
-├── webhooks/
-│   ├── manager.js           # Webhook queue and dispatch
-│   ├── discord.js           # Discord webhook client
-│   └── teams.js             # Teams webhook client
-└── migrations/
-    └── 003-add-device-status-table.sql
-```
-
-**Modified Files:**
-- `server/server-cli.js` - Initialize alerting service
-- `server/db.js` - Add device_status table and queries
-- `config.example.js` - Add alerting config section
-
-### Database Schema Changes
-
-**New Table:**
+**Table: `unifi_clients`**
 ```sql
-CREATE TABLE device_status (
+CREATE TABLE unifi_clients (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  device_name TEXT NOT NULL,
-  device_type TEXT NOT NULL,  -- 'heartbeat' or 'ping_target'
-  last_status TEXT NOT NULL,  -- 'online' or 'offline'
-  last_change_at INTEGER NOT NULL,
-  last_alert_sent_at INTEGER,
-  created_at INTEGER NOT NULL,
-  UNIQUE(device_name, device_type)
-);
-
-CREATE INDEX idx_device_status_name ON device_status(device_name);
-CREATE INDEX idx_device_status_change ON device_status(last_change_at);
-```
-
-**Alert History Table (optional):**
-```sql
-CREATE TABLE alert_history (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  device_name TEXT NOT NULL,
-  device_type TEXT NOT NULL,
-  alert_type TEXT NOT NULL,
-  severity TEXT NOT NULL,
-  message TEXT NOT NULL,
-  webhook_name TEXT,
-  sent_at INTEGER NOT NULL,
-  success INTEGER NOT NULL  -- 1 = sent, 0 = failed
+  mac TEXT NOT NULL,
+  ip TEXT,
+  hostname TEXT,
+  name TEXT,
+  manufacturer TEXT,
+  device_type TEXT,
+  is_wired INTEGER NOT NULL,
+  rx_bytes INTEGER,
+  tx_bytes INTEGER,
+  rx_rate INTEGER,
+  tx_rate INTEGER,
+  signal INTEGER,
+  channel INTEGER,
+  essid TEXT,
+  is_connected INTEGER NOT NULL,
+  first_seen INTEGER NOT NULL,
+  last_seen INTEGER NOT NULL,
+  received_at INTEGER NOT NULL
 );
 ```
 
-### Testing Strategy
+**Table: `unifi_connection_events`**
+```sql
+CREATE TABLE unifi_connection_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  mac TEXT NOT NULL,
+  event_type TEXT NOT NULL,         -- 'connected' or 'disconnected'
+  timestamp INTEGER NOT NULL,
+  hostname TEXT,
+  ip TEXT
+);
+```
 
-1. **Unit Tests**
-   - Status detection logic
-   - Debouncing calculations
-   - Webhook payload formatting
-   - Configuration validation
+**Table: `unifi_client_states`**
+```sql
+CREATE TABLE unifi_client_states (
+  mac TEXT PRIMARY KEY,
+  hostname TEXT,
+  ip TEXT,
+  is_connected INTEGER NOT NULL,
+  last_seen INTEGER NOT NULL,
+  last_state_change INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+```
 
-2. **Integration Tests**
-   - Database status tracking
-   - Alert queue processing
-   - Webhook dispatch (using mock servers)
+### REST API Endpoints
 
-3. **Manual Testing**
-   - Test webhook endpoints with real Discord/Teams channels
-   - Simulate device offline/online scenarios
-   - Verify rate limiting and batching
+**GET /api/unifi/clients**
+- Returns all UniFi clients (connected and disconnected)
+- Includes: MAC, IP, hostname, device type, connection status, traffic stats
 
-### Future Alert Enhancements
-- [ ] Slack integration
-- [ ] Email notifications (SMTP)
-- [ ] PagerDuty integration for on-call rotation
-- [ ] SMS alerts via Twilio
-- [ ] Alert acknowledgment tracking (mark as "seen")
-- [ ] Alert history and analytics dashboard
-- [ ] Custom webhook templates
-- [ ] Alerting API for external integrations
-- [ ] Multi-language alert messages
-- [ ] Alert routing based on time of day
+**GET /api/unifi/clients/:mac**
+- Returns detailed information for a specific client
+- Includes: Full device details, current status, traffic statistics
+
+**GET /api/unifi/clients/:mac/history**
+- Returns connection event history for a client
+- Shows: Connection/disconnection events with timestamps
+
+**GET /api/unifi/stats**
+- Returns overall UniFi monitoring statistics
+- Includes: Total clients, connected count, wired/wireless breakdown
+
+### Configuration
+
+Configuration in `config.js`:
+```javascript
+unifi: {
+  host: '192.168.203.254',          // UniFi Controller IP/hostname
+  port: 443,                        // HTTPS port
+  username: 'monitor',              // Admin username
+  password: 'your-password',        // Admin password
+  site: 'default',                  // Site name
+  interval: 60,                     // Poll interval in seconds
+  ignoreSsl: true                   // Ignore self-signed SSL certs
+}
+```
+
+### Build Output
+
+```bash
+npm run build:unifi:win   # Windows executable
+npm run build:unifi:linux # Linux executable
+npm run build:unifi:macos # macOS executable
+```
+
+Produces: `dist/unifi-monitor-win.exe` (or Linux/macOS equivalent)
+
+### Use Cases
+
+- **Network Visibility**: Monitor all devices connected to your network in real-time
+- **Guest Tracking**: Identify when guests connect/disconnect from WiFi
+- **IoT Monitoring**: Track smart home devices and their connectivity
+- **Device Inventory**: Maintain a database of all devices that have connected
+- **Bandwidth Analysis**: Review traffic patterns per client
+- **Connection History**: Audit client connection/disconnection events
+
+### Files Added
+
+**Client Files:**
+- `client/unifi-monitor.js` - Main monitor executable
+- `client/unifi-api.js` - UniFi Controller API library
+- `client/test-unifi.js` - Testing utility
+- `client/test-unifi-sites.js` - Multi-site testing utility
+
+**Server Files:**
+- `server/unifi-db.js` - UniFi database operations
+- API endpoints added to `server/api.js`
+
+**Dashboard Files:**
+- `dashboard/src/components/UniFiClients.jsx` - Client list view
+- `dashboard/src/components/UniFiClients.css` - Styling
+- `dashboard/src/components/UniFiClientDetail.jsx` - Individual client details
+- `dashboard/src/components/UniFiClientDetail.css` - Detail view styling
 
 ## Other Future Enhancements
 

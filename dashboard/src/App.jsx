@@ -6,6 +6,7 @@ import PingMonitor from './components/PingMonitor'
 import PingTargetDetail from './components/PingTargetDetail'
 import UniFiClients from './components/UniFiClients'
 import UniFiClientDetail from './components/UniFiClientDetail'
+import Reports from './components/Reports'
 import { API_URL } from './api'
 import './App.css'
 
@@ -14,6 +15,7 @@ function Navigation() {
   const isHeartbeatRoute = location.pathname === '/' || location.pathname.startsWith('/device/')
   const isPingRoute = location.pathname.startsWith('/ping')
   const isUnifiRoute = location.pathname.startsWith('/unifi')
+  const isReportsRoute = location.pathname.startsWith('/reports')
 
   return (
     <nav className="app-nav">
@@ -25,6 +27,9 @@ function Navigation() {
       </Link>
       <Link to="/unifi" className={isUnifiRoute ? 'active' : ''}>
         Dreaming
+      </Link>
+      <Link to="/reports" className={isReportsRoute ? 'active' : ''}>
+        Reports
       </Link>
     </nav>
   )
@@ -56,11 +61,12 @@ function App() {
             <Route path="/ping/:ip" element={<PingTargetDetail />} />
             <Route path="/unifi" element={<UniFiClients />} />
             <Route path="/unifi/client/:mac" element={<UniFiClientDetail />} />
+            <Route path="/reports" element={<Reports />} />
           </Routes>
         </main>
 
         <footer className="app-footer">
-          <p>Phase 6: UniFi Integration • Real-time network monitoring</p>
+          <p>Phase 7: Extended Reporting • Network analytics and insights</p>
         </footer>
       </div>
     </BrowserRouter>

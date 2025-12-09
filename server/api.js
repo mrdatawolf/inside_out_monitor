@@ -1,14 +1,63 @@
 import express from 'express';
 import cors from 'cors';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { getDb } from './db.js';
 import { getUnifiDb } from './unifi-db.js';
+import * as UniFiReports from './unifi-reports.js';
+import config from '../config.js';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const API_PORT = 3000;
+
+// Load API read key for authentication (Phase 7: Multi-Site Support)
+let apiReadKey = null;
+const requireApiKey = config.server?.requireApiKey !== false; // Default to true
+
+if (requireApiKey) {
+  try {
+    apiReadKey = readFileSync(join(__dirname, 'api_read.key'), 'utf8').trim();
+    console.log('✓ API read key loaded - authentication enabled');
+  } catch (error) {
+    console.error('⚠️  Warning: Could not load api_read.key');
+    console.error('   API authentication is disabled');
+    console.error('   Run: npm run build to generate api_read.key');
+  }
+}
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// API Key authentication middleware (Phase 7: Multi-Site Support)
+app.use('/api', (req, res, next) => {
+  // Skip authentication if not required or key not loaded
+  if (!requireApiKey || !apiReadKey) {
+    return next();
+  }
+
+  // Check X-API-Key header
+  const providedKey = req.headers['x-api-key'];
+
+  if (!providedKey) {
+    return res.status(401).json({
+      error: 'API key required',
+      message: 'Missing X-API-Key header'
+    });
+  }
+
+  if (providedKey !== apiReadKey) {
+    return res.status(403).json({
+      error: 'Invalid API key',
+      message: 'The provided API key is not valid'
+    });
+  }
+
+  // Valid key - proceed
+  next();
+});
 
 // Helper function to convert sql.js results to JSON
 function sqlToJson(result) {
@@ -636,6 +685,260 @@ app.get('/api/unifi/stats', (req, res) => {
   }
 });
 
+// ============================================================================
+// UNIFI REPORTING ENDPOINTS
+// ============================================================================
+
+// REPORT 1: Network Health Overview
+app.get('/api/reports/unifi/overview', (req, res) => {
+  try {
+    const period = req.query.period || '24h';
+    const report = UniFiReports.getNetworkHealthOverview(period);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// REPORT 2: Connection Stability Reports
+app.get('/api/reports/unifi/flapping-devices', (req, res) => {
+  try {
+    const threshold = parseInt(req.query.threshold) || 10;
+    const period = req.query.period || '24h';
+    const report = UniFiReports.getFlappingDevices(threshold, period);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports/unifi/uptime-stats', (req, res) => {
+  try {
+    const sort = req.query.sort || 'desc';
+    const limit = parseInt(req.query.limit) || 50;
+    const period = req.query.period || '7d';
+    const report = UniFiReports.getUptimeStats(sort, limit, period);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports/unifi/connection-quality', (req, res) => {
+  try {
+    const period = req.query.period || '7d';
+    const report = UniFiReports.getConnectionQuality(period);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// REPORT 3: Wireless Network Quality
+app.get('/api/reports/unifi/signal-distribution', (req, res) => {
+  try {
+    const threshold = parseInt(req.query.threshold) || -70;
+    const report = UniFiReports.getSignalDistribution(threshold);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports/unifi/poor-signal-devices', (req, res) => {
+  try {
+    const threshold = parseInt(req.query.threshold) || -70;
+    const limit = parseInt(req.query.limit) || 50;
+    const report = UniFiReports.getPoorSignalDevices(threshold, limit);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports/unifi/channel-utilization', (req, res) => {
+  try {
+    const report = UniFiReports.getChannelUtilization();
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// REPORT 4: Device Inventory & Discovery
+app.get('/api/reports/unifi/inventory', (req, res) => {
+  try {
+    const status = req.query.status || 'all';
+    const period = req.query.period || '30d';
+    const report = UniFiReports.getDeviceInventory(status, period);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports/unifi/new-devices', (req, res) => {
+  try {
+    const period = req.query.period || '7d';
+    const report = UniFiReports.getNewDevices(period);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports/unifi/inactive-devices', (req, res) => {
+  try {
+    const threshold = parseInt(req.query.threshold) || 30;
+    const report = UniFiReports.getInactiveDevices(threshold);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports/unifi/manufacturer-breakdown', (req, res) => {
+  try {
+    const report = UniFiReports.getManufacturerBreakdown();
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// REPORT 5: Time-Based Analytics
+app.get('/api/reports/unifi/connection-timeline', (req, res) => {
+  try {
+    const period = req.query.period || '7d';
+    const interval = req.query.interval || 'hourly';
+    const report = UniFiReports.getConnectionTimeline(period, interval);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports/unifi/peak-hours', (req, res) => {
+  try {
+    const period = req.query.period || '30d';
+    const report = UniFiReports.getPeakHours(period);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports/unifi/session-duration', (req, res) => {
+  try {
+    const groupBy = req.query.groupBy || 'device_type';
+    const report = UniFiReports.getSessionDuration(groupBy);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// REPORT 6: Alerting & Incident Reports
+app.get('/api/reports/unifi/event-timeline', (req, res) => {
+  try {
+    const period = req.query.period || '24h';
+    const type = req.query.type || 'all';
+    const report = UniFiReports.getEventTimeline(period, type);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports/unifi/mass-events', (req, res) => {
+  try {
+    const threshold = parseInt(req.query.threshold) || 5;
+    const period = req.query.period || '7d';
+    const report = UniFiReports.getMassEvents(threshold, period);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// REPORT 7: Bandwidth & Traffic Analysis
+app.get('/api/reports/unifi/top-consumers', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const period = req.query.period || '7d';
+    const metric = req.query.metric || 'total';
+    const report = UniFiReports.getTopConsumers(limit, period, metric);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports/unifi/traffic-patterns', (req, res) => {
+  try {
+    const period = req.query.period || '7d';
+    const report = UniFiReports.getTrafficPatterns(period);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports/unifi/bandwidth-heatmap', (req, res) => {
+  try {
+    const period = req.query.period || '7d';
+    const report = UniFiReports.getBandwidthHeatmap(period);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// REPORT 8: Security & Compliance
+app.get('/api/reports/unifi/unknown-devices', (req, res) => {
+  try {
+    const report = UniFiReports.getUnknownDevices();
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports/unifi/suspicious-patterns', (req, res) => {
+  try {
+    const threshold = parseInt(req.query.threshold) || 20;
+    const report = UniFiReports.getSuspiciousPatterns(threshold);
+    res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// HEALTH ENDPOINT
+// ============================================================================
+
 app.get('/api/health', (req, res) => {
   const db = getDb();
   const unifiDb = getUnifiDb();
@@ -668,6 +971,28 @@ export function startApi(port = API_PORT) {
     console.log(`       GET /api/unifi/clients/:mac`);
     console.log(`       GET /api/unifi/clients/:mac/history`);
     console.log(`       GET /api/unifi/stats`);
+    console.log(`     UniFi Reporting Endpoints:`);
+    console.log(`       GET /api/reports/unifi/overview`);
+    console.log(`       GET /api/reports/unifi/flapping-devices`);
+    console.log(`       GET /api/reports/unifi/uptime-stats`);
+    console.log(`       GET /api/reports/unifi/connection-quality`);
+    console.log(`       GET /api/reports/unifi/signal-distribution`);
+    console.log(`       GET /api/reports/unifi/poor-signal-devices`);
+    console.log(`       GET /api/reports/unifi/channel-utilization`);
+    console.log(`       GET /api/reports/unifi/inventory`);
+    console.log(`       GET /api/reports/unifi/new-devices`);
+    console.log(`       GET /api/reports/unifi/inactive-devices`);
+    console.log(`       GET /api/reports/unifi/manufacturer-breakdown`);
+    console.log(`       GET /api/reports/unifi/connection-timeline`);
+    console.log(`       GET /api/reports/unifi/peak-hours`);
+    console.log(`       GET /api/reports/unifi/session-duration`);
+    console.log(`       GET /api/reports/unifi/event-timeline`);
+    console.log(`       GET /api/reports/unifi/mass-events`);
+    console.log(`       GET /api/reports/unifi/top-consumers`);
+    console.log(`       GET /api/reports/unifi/traffic-patterns`);
+    console.log(`       GET /api/reports/unifi/bandwidth-heatmap`);
+    console.log(`       GET /api/reports/unifi/unknown-devices`);
+    console.log(`       GET /api/reports/unifi/suspicious-patterns`);
     console.log(`     Health:`);
     console.log(`       GET /api/health\n`);
   });
