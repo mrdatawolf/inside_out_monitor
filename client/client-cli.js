@@ -19,6 +19,8 @@ const __dirname = dirname(__filename);
 
 // Configuration defaults (modified by inject-config.js during build)
 let embeddedSecretKey = 'DbOXvSqZ38D/vE5yrtp4haaJxHImFuicYFCj97BPBiI=';  // Injected during build from dist/secret.key
+let configLocation = 'Unknown';  // Injected during build from config.js (Phase 7: Multi-Site Support)
+let configSublocation = 'Unknown';  // Injected during build from config.js (Phase 7: Multi-Site Support)
 const args = process.argv.slice(2);
 let deviceName = os.hostname();
 let serverHost = '192.168.203.241';
@@ -127,6 +129,8 @@ async function sendHeartbeat() {
     const message = {
       name: deviceName,
       timestamp: Math.floor(Date.now() / 1000),
+      location: configLocation,  // Phase 7: Multi-Site Support
+      sublocation: configSublocation,  // Phase 7: Multi-Site Support
       network_interfaces: networkInterfaces
     };
 

@@ -44,6 +44,11 @@ const serverUdpPort = config.serverUrl.udpPort || 4000;
 const serverApiPort = config.serverUrl.apiPort || 3000;
 const apiUrl = `http://${serverHost}:${serverApiPort}`;
 
+// Load location configuration (Phase 7: Multi-Site Support)
+const location = config.location?.location || 'Unknown';
+const sublocation = config.location?.sublocation || 'Unknown';
+console.log(`✅ Location: ${location} / ${sublocation}`);
+
 // Load secret.key and convert to base64 for embedding
 let secretKeyBase64 = '';
 try {
@@ -56,6 +61,18 @@ try {
   secretKeyBase64 = 'PLACEHOLDER_SECRET_KEY';
 }
 
+// Load api_read.key for embedding in dashboard (Phase 7: Multi-Site Support)
+let apiReadKeyBase64 = '';
+try {
+  const apiReadKeyPath = join(rootDir, 'dist', 'api_read.key');
+  apiReadKeyBase64 = readFileSync(apiReadKeyPath, 'utf8').trim();
+  console.log('✅ Loaded api_read.key for embedding');
+} catch (error) {
+  console.error('⚠️  Warning: Could not load dist/api_read.key:', error.message);
+  console.error('   Dashboard will need api_read.key file at runtime');
+  apiReadKeyBase64 = 'PLACEHOLDER_API_READ_KEY';
+}
+
 // Update dashboard/src/api.js
 const apiFilePath = join(rootDir, 'dashboard', 'src', 'api.js');
 try {
@@ -65,6 +82,12 @@ try {
   apiContent = apiContent.replace(
     /\? '.*?'  \/\/ Production - configured from root config\.js/,
     `? '${apiUrl}/api'  // Production - configured from root config.js`
+  );
+
+  // Replace the embedded API read key (Phase 7: Multi-Site Support)
+  apiContent = apiContent.replace(
+    /let embeddedApiReadKey = '.*?';/,
+    `let embeddedApiReadKey = '${apiReadKeyBase64}';`
   );
 
   writeFileSync(apiFilePath, apiContent, 'utf8');
@@ -97,6 +120,16 @@ try {
     `let embeddedSecretKey = '${secretKeyBase64}';`
   );
 
+  // Replace location/sublocation (Phase 7: Multi-Site Support)
+  clientContent = clientContent.replace(
+    /let configLocation = '.*?';/,
+    `let configLocation = '${location}';`
+  );
+  clientContent = clientContent.replace(
+    /let configSublocation = '.*?';/,
+    `let configSublocation = '${sublocation}';`
+  );
+
   writeFileSync(clientCliPath, clientContent, 'utf8');
   console.log(`✅ Updated client default server: ${serverHost}:${serverUdpPort}`);
 } catch (error) {
@@ -125,6 +158,16 @@ try {
   pingContent = pingContent.replace(
     /let embeddedSecretKey = '.*?';/,
     `let embeddedSecretKey = '${secretKeyBase64}';`
+  );
+
+  // Replace location/sublocation (Phase 7: Multi-Site Support)
+  pingContent = pingContent.replace(
+    /let configLocation = '.*?';/,
+    `let configLocation = '${location}';`
+  );
+  pingContent = pingContent.replace(
+    /let configSublocation = '.*?';/,
+    `let configSublocation = '${sublocation}';`
   );
 
   writeFileSync(pingCliPath, pingContent, 'utf8');
@@ -191,6 +234,16 @@ try {
   unifiContent = unifiContent.replace(
     /let embeddedSecretKey = '.*?';/,
     `let embeddedSecretKey = '${secretKeyBase64}';`
+  );
+
+  // Replace location/sublocation (Phase 7: Multi-Site Support)
+  unifiContent = unifiContent.replace(
+    /let configLocation = '.*?';/,
+    `let configLocation = '${location}';`
+  );
+  unifiContent = unifiContent.replace(
+    /let configSublocation = '.*?';/,
+    `let configSublocation = '${sublocation}';`
   );
 
   writeFileSync(unifiPath, unifiContent, 'utf8');

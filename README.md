@@ -71,15 +71,25 @@ cp client/secret.key dist/secret.key
 - Cooldown periods to prevent alert fatigue
 - See [ALERTING.md](ALERTING.md) for complete documentation
 
-**Phase 6** (Planned): Extended Reporting
+**Phase 6** (Complete): UniFi Network Monitoring
+- Integration with Ubiquiti UniFi Controllers
+- Monitor all wireless and wired clients
+- Track connection/disconnection events
+- Device type detection (Apple, Android, IoT, etc.)
+- Traffic statistics and signal strength monitoring
+- Dashboard integration with real-time client list
+- See [ARCHITECTURE.md](ARCHITECTURE.md#phase-6-unifi-network-monitoring-complete) for details
+
+**Phase 7** (Planned): Extended Reporting
 - Historical trend analysis
 - Uptime/downtime statistics
 - Network bandwidth reports
 - Custom report generation
-**Phase 7** (Planned): Move server to external domain  sewrver
-- Test the server running in a external public accessable server.
+
+**Phase 8** (Planned): External Server Deployment
+- Test the server running on an external public accessible server
 - Add more encryption and checking to harden the system
-- Use it to test the linux chain.
+- Use it to test the Linux deployment chain
 
 ## Architecture
 
@@ -791,7 +801,9 @@ Decrypted JSON payload:
   - Responsive, modern UI
 - ✅ **Phase 4**: Ping monitoring for network devices
 - ✅ **Phase 5**: Alerting system ([ALERTING.md](ALERTING.md))
-- 📋 **Phase 6**: Extended reporting
+- ✅ **Phase 6**: UniFi network monitoring ([ARCHITECTURE.md](ARCHITECTURE.md#phase-6-unifi-network-monitoring-complete))
+- 📋 **Phase 7**: Extended reporting
+- 📋 **Phase 8**: External server deployment
 
 ## Phase 5: Alerting System (Complete)
 
@@ -873,6 +885,99 @@ See [ALERTING.md](ALERTING.md) for:
 - `ALERTING.md` - Complete documentation
 - Updated `config.js` with alerting configuration
 - Added 3 database tables: `device_states`, `ping_target_states`, `alert_log`
+
+## Phase 6: UniFi Network Monitoring (Complete)
+
+The UniFi monitoring system integrates with Ubiquiti UniFi network controllers to track all connected clients (wireless and wired) on your network.
+
+### Features Implemented
+
+**UniFi Integration:**
+- ✅ Connects to UniFi Dream Router, UDM Pro, and UniFi OS controllers
+- ✅ Authenticates via UniFi Controller REST API
+- ✅ Polls connected clients at configurable intervals
+- ✅ Encrypts and sends client data to monitor server
+- ✅ Supports self-signed SSL certificates
+
+**Client Monitoring:**
+- ✅ Tracks MAC address, IP, hostname, device name
+- ✅ Identifies device manufacturer via OUI lookup
+- ✅ Detects device type (wired, wireless, Apple, Android, IoT)
+- ✅ Monitors traffic statistics (RX/TX bytes and rates)
+- ✅ Records wireless signal strength and channel information
+- ✅ Logs connection/disconnection events
+
+**Dashboard Features:**
+- ✅ Real-time client list with 5-second auto-refresh
+- ✅ Connection status indicators (connected/disconnected)
+- ✅ Filter by hostname, MAC address, IP, or manufacturer
+- ✅ Device type filtering (all, wired, wireless)
+- ✅ Device icons based on type (Apple, Android, IoT, etc.)
+- ✅ Traffic statistics display
+- ✅ Individual client detail views with connection history
+- ✅ Statistics overview (total clients, connected count, wired/wireless breakdown)
+
+### Configuration
+
+All UniFi settings are configured in [config.js](config.js). Example:
+
+```javascript
+unifi: {
+  host: '192.168.1.1',              // UniFi Controller IP
+  port: 443,                        // HTTPS port
+  username: 'monitor',              // Admin username
+  password: 'your-password',        // Password
+  site: 'default',                  // Site name (usually 'default')
+  interval: 60,                     // Poll interval in seconds
+  ignoreSsl: true                   // Ignore self-signed certs
+}
+```
+
+### UniFi Monitor Executable
+
+Build the UniFi monitor for deployment:
+
+```bash
+npm run build:unifi:win   # Windows
+npm run build:unifi:linux # Linux
+npm run build:unifi:macos # macOS
+```
+
+**Usage:**
+```bash
+# Windows
+unifi-monitor-win.exe --host 192.168.1.1 --password yourpass --interval 60
+
+# Linux/macOS
+./unifi-monitor-linux --host 192.168.1.1 --password yourpass --interval 60
+```
+
+**Deployment:** Copy the exe + `secret.key` to your monitoring box. Run!
+
+### Database Schema
+
+The UniFi monitoring system uses a separate `unifi.sqlite3` database with three tables:
+
+- `unifi_clients` - Historical snapshot of all client connections
+- `unifi_client_states` - Current connection state for each client
+- `unifi_connection_events` - Log of connect/disconnect events
+
+### API Endpoints
+
+- `GET /api/unifi/clients` - List all clients (connected and historical)
+- `GET /api/unifi/clients/:mac` - Client details
+- `GET /api/unifi/clients/:mac/history` - Connection event history
+- `GET /api/unifi/stats` - Overall statistics
+
+### Files Added
+
+- `client/unifi-monitor.js` - UniFi monitor executable
+- `client/unifi-api.js` - UniFi Controller API client library
+- `server/unifi-db.js` - UniFi database operations
+- `dashboard/src/components/UniFiClients.jsx` - Dashboard client list
+- `dashboard/src/components/UniFiClientDetail.jsx` - Dashboard client details
+- API endpoints added to `server/api.js`
+- Added 3 database tables: `unifi_clients`, `unifi_client_states`, `unifi_connection_events`
 
 ## License
 

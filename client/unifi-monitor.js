@@ -19,6 +19,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Configuration defaults (modified by inject-config.js during build)
 let embeddedSecretKey = 'DbOXvSqZ38D/vE5yrtp4haaJxHImFuicYFCj97BPBiI=';  // Injected during build from dist/secret.key
+let configLocation = 'Unknown';  // Injected during build from config.js (Phase 7: Multi-Site Support)
+let configSublocation = 'Unknown';  // Injected during build from config.js (Phase 7: Multi-Site Support)
 let configServerHost = '192.168.203.241';
 let configServerPort = 4000;
 let configUnifiHost = '192.168.203.254';
@@ -200,6 +202,8 @@ async function pollUniFi() {
     const payload = {
       type: 'unifi',
       timestamp,
+      location: configLocation,  // Phase 7: Multi-Site Support
+      sublocation: configSublocation,  // Phase 7: Multi-Site Support
       clients
     };
 

@@ -127,6 +127,51 @@ export async function initDb() {
   db.run(`CREATE INDEX IF NOT EXISTS idx_alert_entity ON alert_log(entity_type, entity_name)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_alert_sent_at ON alert_log(sent_at)`);
 
+  // Phase 7 migrations: Add location/sublocation support
+  try {
+    // Check if location column exists in heartbeats table
+    const heartbeatsInfo = db.exec("PRAGMA table_info(heartbeats)");
+    const hasLocationCol = heartbeatsInfo[0]?.values.some(row => row[1] === 'location');
+
+    if (!hasLocationCol) {
+      db.run(`ALTER TABLE heartbeats ADD COLUMN location TEXT`);
+      db.run(`ALTER TABLE heartbeats ADD COLUMN sublocation TEXT`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_location ON heartbeats(location)`);
+      console.log('✓ Added location/sublocation columns to heartbeats table');
+    }
+  } catch (error) {
+    // Columns may already exist, ignore error
+  }
+
+  try {
+    // Check if location column exists in ping_results table
+    const pingInfo = db.exec("PRAGMA table_info(ping_results)");
+    const hasLocationCol = pingInfo[0]?.values.some(row => row[1] === 'location');
+
+    if (!hasLocationCol) {
+      db.run(`ALTER TABLE ping_results ADD COLUMN location TEXT`);
+      db.run(`ALTER TABLE ping_results ADD COLUMN sublocation TEXT`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_ping_location ON ping_results(location)`);
+      console.log('✓ Added location/sublocation columns to ping_results table');
+    }
+  } catch (error) {
+    // Columns may already exist, ignore error
+  }
+
+  try {
+    // Check if location column exists in ping_target_states table
+    const pingStateInfo = db.exec("PRAGMA table_info(ping_target_states)");
+    const hasLocationCol = pingStateInfo[0]?.values.some(row => row[1] === 'location');
+
+    if (!hasLocationCol) {
+      db.run(`ALTER TABLE ping_target_states ADD COLUMN location TEXT`);
+      db.run(`ALTER TABLE ping_target_states ADD COLUMN sublocation TEXT`);
+      console.log('✓ Added location/sublocation columns to ping_target_states table');
+    }
+  } catch (error) {
+    // Columns may already exist, ignore error
+  }
+
   console.log('✓ Database schema initialized');
 
   // Auto-save every 5 minutes

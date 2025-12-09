@@ -1,0 +1,514 @@
+.reports {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.reports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.reports-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 28px;
+}
+
+.reports-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.period-selector {
+  padding: 8px 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.period-selector:hover {
+  border-color: #0066cc;
+}
+
+.period-selector:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
+}
+
+.refresh-button {
+  padding: 8px 20px;
+  background: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.refresh-button:hover {
+  background: #0052a3;
+}
+
+.refresh-button:active {
+  transform: scale(0.98);
+}
+
+/* Report Sections */
+.report-section {
+  background: white;
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.report-section h3 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.stat-card {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card.online {
+  background: #e8f5e9;
+  border-color: #4caf50;
+}
+
+.stat-card.offline {
+  background: #ffebee;
+  border-color: #f44336;
+}
+
+.stat-card.excellent {
+  background: #e8f5e9;
+  border-color: #4caf50;
+}
+
+.stat-card.good {
+  background: #fff9c4;
+  border-color: #fbc02d;
+}
+
+.stat-card.fair {
+  background: #ffe0b2;
+  border-color: #ff9800;
+}
+
+.stat-card.poor {
+  background: #ffebee;
+  border-color: #f44336;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Device Types Grid */
+.device-types-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
+}
+
+.device-type-card {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  border: 2px solid #e0e0e0;
+  transition: all 0.2s;
+}
+
+.device-type-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: #0066cc;
+}
+
+.device-type-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.device-type-label {
+  font-size: 12px;
+  color: #666;
+  text-transform: capitalize;
+  margin-bottom: 5px;
+}
+
+.device-type-count {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Insights List */
+.insights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.insight-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #0066cc;
+}
+
+.insight-item.warning {
+  background: #fff9c4;
+  border-left-color: #ff9800;
+}
+
+.insight-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.insight-text {
+  color: #333;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Loading & Error States */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 16px;
+}
+
+.error {
+  text-align: center;
+  padding: 40px;
+  color: #f44336;
+  font-size: 16px;
+  background: #ffebee;
+  border-radius: 8px;
+  margin: 20px;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  font-size: 16px;
+}
+
+/* Last Updated */
+.last-updated {
+  text-align: center;
+  padding: 15px;
+  color: #999;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Collapsible Headers */
+.collapsible-header {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.collapsible-header:hover {
+  color: #0066cc;
+}
+
+/* Device Lists */
+.device-list, .consumer-list, .event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.device-item, .consumer-item, .event-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #e0e0e0;
+  transition: all 0.2s;
+}
+
+.device-item:hover, .consumer-item:hover, .event-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.device-item.warning, .event-item.warning {
+  background: #fff9c4;
+  border-left-color: #ff9800;
+}
+
+.device-info, .consumer-info, .event-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.device-detail, .consumer-detail {
+  font-size: 12px;
+  color: #666;
+}
+
+.device-stats, .consumer-stats {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.stat-badge {
+  padding: 4px 10px;
+  background: white;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #333;
+  border: 1px solid #e0e0e0;
+  white-space: nowrap;
+}
+
+.stat-badge.good {
+  background: #e8f5e9;
+  border-color: #4caf50;
+  color: #2e7d32;
+}
+
+/* Manufacturer Grid */
+.manufacturer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.manufacturer-card {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  border: 2px solid #e0e0e0;
+  transition: all 0.2s;
+}
+
+.manufacturer-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: #0066cc;
+}
+
+.manufacturer-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.manufacturer-count {
+  font-size: 20px;
+  font-weight: bold;
+  color: #0066cc;
+  margin-bottom: 4px;
+}
+
+.manufacturer-connected {
+  font-size: 11px;
+  color: #4caf50;
+}
+
+/* Timeline */
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.timeline-time {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  min-width: 80px;
+}
+
+.timeline-bar {
+  flex-grow: 1;
+  background: linear-gradient(90deg, #0066cc, #4da3ff);
+  padding: 8px 15px;
+  border-radius: 6px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+  min-width: 100px;
+}
+
+.timeline-bar:hover {
+  transform: scaleX(1.02);
+  box-shadow: 0 2px 6px rgba(0, 102, 204, 0.3);
+}
+
+/* Event List */
+.event-time {
+  font-size: 12px;
+  color: #666;
+  min-width: 150px;
+}
+
+.event-type {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #e0e0e0;
+  border-radius: 10px;
+  font-size: 11px;
+  margin-left: 8px;
+  text-transform: capitalize;
+}
+
+.event-type.connected {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.event-type.disconnected {
+  background: #ffebee;
+  color: #c62828;
+}
+
+/* Subsection Headers */
+h4 {
+  margin: 20px 0 10px 0;
+  color: #555;
+  font-size: 16px;
+  font-weight: 600;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 8px;
+}
+
+h4:first-child {
+  margin-top: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .reports-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .reports-controls {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .period-selector,
+  .refresh-button {
+    width: 100%;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .device-types-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .report-section {
+    padding: 15px;
+  }
+
+  .reports-header h2 {
+    font-size: 24px;
+  }
+
+  .device-item, .consumer-item, .event-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .device-stats, .consumer-stats {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .timeline-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .timeline-bar {
+    width: 100%;
+  }
+
+  .manufacturer-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+}

@@ -5,6 +5,14 @@
  */
 
 export default {
+  // Location Configuration (Phase 7: Multi-Site Support)
+  // Used to identify which physical location this monitor is running in
+  // Sent with every packet to the server for multi-site deployments
+  location: {
+    location: 'Main Office',      // Primary location (e.g., "Main Office", "Branch-NYC", "HomeNet")
+    sublocation: 'Server Room'    // Sub-location (e.g., "Server Room", "Floor 2", "Building A")
+  },
+
   // Server URL - IMPORTANT: Change this to your server's IP address or hostname
   // This is used by the client, ping-monitor, and dashboard to connect to the server
   serverUrl: {
@@ -18,7 +26,8 @@ export default {
     udpPort: 4000,           // Port for receiving heartbeat messages
     apiPort: 3000,           // Port for HTTP API
     maxMessageAge: 300,      // Maximum message age in seconds (5 minutes)
-    host: '0.0.0.0'          // Bind to all interfaces
+    host: '0.0.0.0',         // Bind to all interfaces
+    requireApiKey: true      // Require API key for read access (recommended for cloud deployments)
   },
 
   // Dashboard Configuration
@@ -58,7 +67,8 @@ export default {
 
   // File Paths (relative to executable location)
   paths: {
-    secretKey: './secret.key',
+    secretKey: './secret.key',        // Encryption key for UDP packets
+    apiReadKey: './api_read.key',     // API authentication key (Phase 7: Multi-Site)
     database: './databases',
     pingTargets: './ping-targets.json'
   },
