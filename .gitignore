@@ -78,3 +78,4 @@ ping-monitor-cli.mjs
 dist/electron/
 server/nul
 dashboard/nul
+nul
