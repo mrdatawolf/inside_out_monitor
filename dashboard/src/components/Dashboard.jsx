@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchDevices, fetchStats } from '../api'
 import './Dashboard.css'
+import './electric-glow.css'
 
 function Dashboard() {
   const [devices, setDevices] = useState([])
@@ -9,6 +10,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
+  const [filterStatus, setFilterStatus] = useState('all') // all, online, offline
 
   useEffect(() => {
     loadData()
@@ -43,6 +45,17 @@ function Dashboard() {
     return `${Math.floor(seconds / 86400)}d ago`
   }
 
+  // Handle stat card clicks
+  function handleStatCardClick(filter) {
+    setFilterStatus(filterStatus === filter ? 'all' : filter)
+  }
+
+  // Filter devices
+  const filteredDevices = devices.filter(device => {
+    if (filterStatus === 'all') return true
+    return device.status === filterStatus
+  })
+
   if (loading) return <div className="loading">Loading...</div>
   if (error) return <div className="error">Error: {error}</div>
 
@@ -50,16 +63,28 @@ function Dashboard() {
     <div className="dashboard">
       {/* Stats Overview */}
       {stats && (
-        <div className="stats-grid">
-          <div className="stat-card">
+        <div className="stats-grid" key={lastUpdated?.getTime()} style={{ '--refresh-interval': '5s' }}>
+          <div
+            className={`stat-card clickable ${filterStatus === 'all' ? 'active' : ''}`}
+            onClick={() => handleStatCardClick('all')}
+            title="Click to show all devices"
+          >
             <div className="stat-value">{stats.total_devices}</div>
             <div className="stat-label">Total Devices</div>
           </div>
-          <div className="stat-card online">
+          <div
+            className={`stat-card online clickable ${filterStatus === 'online' ? 'active' : ''}`}
+            onClick={() => handleStatCardClick('online')}
+            title="Click to filter online devices"
+          >
             <div className="stat-value">{stats.online_devices}</div>
             <div className="stat-label">Online</div>
           </div>
-          <div className="stat-card offline">
+          <div
+            className={`stat-card offline clickable ${filterStatus === 'offline' ? 'active' : ''}`}
+            onClick={() => handleStatCardClick('offline')}
+            title="Click to filter offline devices"
+          >
             <div className="stat-value">{stats.offline_devices}</div>
             <div className="stat-label">Offline</div>
           </div>
@@ -72,12 +97,19 @@ function Dashboard() {
 
       {/* Device List */}
       <div className="devices-section">
-        <h2>Devices</h2>
+        <h2>
+          Devices
+          {filterStatus !== 'all' && (
+            <span className="filter-indicator"> (Filtered: {filterStatus})</span>
+          )}
+        </h2>
         <div className="devices-list">
-          {devices.length === 0 ? (
-            <div className="no-devices">No devices reporting yet</div>
+          {filteredDevices.length === 0 ? (
+            <div className="no-devices">
+              {filterStatus === 'all' ? 'No devices reporting yet' : `No ${filterStatus} devices`}
+            </div>
           ) : (
-            devices.map(device => (
+            filteredDevices.map(device => (
               <Link
                 key={device.device_name}
                 to={`/device/${encodeURIComponent(device.device_name)}`}

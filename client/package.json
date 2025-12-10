@@ -15,9 +15,9 @@
     "test:unifi": "node test-unifi.js",
     "test:unifi:sites": "node test-unifi-sites.js",
     "bundle": "node ../scripts/build-with-config.js",
-    "cleanup": "node -e \"const fs=require('fs'); ['../dist/client-bundle.cjs','../dist/ping-bundle.cjs','../dist/unifi-bundle.cjs'].forEach(f=>{try{fs.unlinkSync(f)}catch(e){}})\"",
-    "build": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output ../dist/heartbeat-client && npm run build:ping && npm run build:unifi && npm run cleanup",
-    "build:win": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-win-x64 --output ../dist/heartbeat-client-win.exe && npm run build:ping:win && npm run build:unifi:win && npm run cleanup",
+    "cleanup": "node -e \"const fs=require('fs'); ['../dist/client-bundle.cjs','../dist/ping-bundle.cjs','../dist/unifi-bundle.cjs','../dist/monitoring-bundle.cjs'].forEach(f=>{try{fs.unlinkSync(f)}catch(e){}})\"",
+    "build": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output ../dist/heartbeat-client && npm run build:ping && npm run build:unifi && npm run build:monitoring && npm run cleanup",
+    "build:win": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-win-x64 --output ../dist/heartbeat-client-win.exe && npm run build:ping:win && npm run build:unifi:win && npm run build:monitoring:win && npm run cleanup",
     "build:linux": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-linux-x64 --output ../dist/heartbeat-client-linux && npm run build:ping:linux && npm run cleanup",
     "build:macos": "npm run bundle && pkg ../dist/client-bundle.cjs --targets node18-macos-x64 --output ../dist/heartbeat-client-macos && npm run build:ping:macos && npm run cleanup",
     "build:ping": "pkg ../dist/ping-bundle.cjs --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output ../dist/heartbeat-ping",
@@ -27,7 +27,11 @@
     "build:unifi": "pkg ../dist/unifi-bundle.cjs --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output ../dist/unifi-monitor",
     "build:unifi:win": "pkg ../dist/unifi-bundle.cjs --targets node18-win-x64 --output ../dist/unifi-monitor-win.exe",
     "build:unifi:linux": "pkg ../dist/unifi-bundle.cjs --targets node18-linux-x64 --output ../dist/unifi-monitor-linux",
-    "build:unifi:macos": "pkg ../dist/unifi-bundle.cjs --targets node18-macos-x64 --output ../dist/unifi-monitor-macos"
+    "build:unifi:macos": "pkg ../dist/unifi-bundle.cjs --targets node18-macos-x64 --output ../dist/unifi-monitor-macos",
+    "build:monitoring": "pkg ../dist/monitoring-bundle.cjs --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output ../dist/web-file-monitor",
+    "build:monitoring:win": "pkg ../dist/monitoring-bundle.cjs --targets node18-win-x64 --output ../dist/web-file-monitor-win.exe",
+    "build:monitoring:linux": "pkg ../dist/monitoring-bundle.cjs --targets node18-linux-x64 --output ../dist/web-file-monitor-linux",
+    "build:monitoring:macos": "pkg ../dist/monitoring-bundle.cjs --targets node18-macos-x64 --output ../dist/web-file-monitor-macos"
   },
   "pkg": {
     "outputPath": "../dist"

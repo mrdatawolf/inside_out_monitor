@@ -205,6 +205,51 @@ CREATE INDEX idx_target_ip ON ping_results(target_ip);
 CREATE INDEX idx_ping_received_at ON ping_results(received_at);
 ```
 
+## Device Online/Offline Status Logic
+
+### Configurable Connection Threshold
+
+Devices are considered **online** if they've been seen within a configurable threshold, defined in `config.js`:
+
+```javascript
+alerting: {
+  behavior: {
+    onlineThresholdSeconds: 300  // Default: 5 minutes (300 seconds)
+  }
+}
+```
+
+**How It Works:**
+- **API Endpoints**: All device status endpoints (`/api/devices`, `/api/devices/:name`, `/api/stats`) use this threshold
+- **Dashboard**: The dashboard displays real-time status based on this threshold
+- **Alerting**: The alerting system uses the same threshold for consistency
+- **UniFi Monitoring**: UniFi clients are automatically marked as disconnected if not seen within this threshold
+
+**Customization:**
+- Change the value in `config.js` to adjust the timeout
+- Restart the server for changes to take effect
+- Minimum recommended: 60 seconds (1 minute)
+- Maximum recommended: 600 seconds (10 minutes)
+- Default: 300 seconds (5 minutes)
+
+### UniFi Client Disconnect Detection
+
+The server runs a periodic check every 60 seconds to mark UniFi clients as disconnected:
+
+```javascript
+// Runs every 60 seconds
+setInterval(() => {
+  markDisconnectedClients(onlineThresholdSeconds);
+}, 60 * 1000);
+```
+
+**Features:**
+- Automatically detects stale UniFi clients based on `last_seen` timestamp
+- Marks clients as disconnected in `unifi_client_states` table
+- Logs disconnection events to `unifi_connection_events` table
+- Works on startup to catch-up with clients that disconnected while server was offline
+- Uses the same `onlineThresholdSeconds` as heartbeat devices for consistency
+
 ## REST API Endpoints
 
 ### Device Heartbeat Endpoints
@@ -220,7 +265,7 @@ List all devices with last heartbeat time.
       "device_name": "DESKTOP-ABC123",
       "last_seen": 1733270400,
       "heartbeat_count": 1234,
-      "status": "online",              // online if last_seen < 10 min ago
+      "status": "online",              // online if last_seen < 5 min ago (configurable via config.js)
       "last_seen_ago": 45              // seconds since last heartbeat
     }
   ]
@@ -866,6 +911,14 @@ Integration with Ubiquiti UniFi network controllers to monitor all connected cli
 - ✅ Wireless signal strength display
 - ✅ Client detail view with connection history
 - ✅ Statistics overview (total clients, connected, wired/wireless)
+- ✅ **Clickable stat cards** - Click any stat card to filter the client list:
+  - **Total Clients** - Resets all filters to show all clients
+  - **Connected** - Shows only currently connected clients (toggle on/off)
+  - **Disconnected** - Shows only disconnected clients (toggle on/off)
+  - **Wired** - Shows only wired connected clients (toggle on/off)
+  - **Wireless** - Shows only wireless connected clients (toggle on/off)
+  - Active filters are highlighted with blue border and shadow
+  - Filters combine with text search for powerful filtering
 
 ### Database Schema
 
@@ -989,17 +1042,173 @@ Produces: `dist/unifi-monitor-win.exe` (or Linux/macOS equivalent)
 - `dashboard/src/components/UniFiClientDetail.jsx` - Individual client details
 - `dashboard/src/components/UniFiClientDetail.css` - Detail view styling
 
-## Other Future Enhancements
+---
 
-### Recommended Improvements
+**CURRENT MILESTONE: Phase 6 Complete** ✅
+
+The system now has complete UniFi network monitoring with real-time client tracking, connection event logging, and dashboard integration. Phase 6 marks the completion of core monitoring infrastructure.
+
+---
+
+## Phase 7: Web & File Monitoring (Planned)
+
+Monitor web services and file integrity from monitoring boxes.
+
+### Planned Features
+
+**Web Page Monitoring Client:**
+- [ ] HTTP/HTTPS endpoint availability checking
+- [ ] Response time measurement and tracking
+- [ ] Status code validation (200, 404, 500, etc.)
+- [ ] SSL certificate expiration monitoring
+- [ ] Response body pattern matching (content validation)
+- [ ] Configurable timeout settings
+- [ ] Per-endpoint check intervals
+- [ ] Support for authentication (Basic, Bearer token)
+- [ ] Custom headers support
+
+**File Monitoring Client:**
+- [ ] File existence checking
+- [ ] File size monitoring and alerting
+- [ ] Last modified timestamp tracking
+- [ ] File hash/checksum validation (integrity checking)
+- [ ] Directory monitoring (file count, total size)
+- [ ] Support for local and network paths (UNC, SMB)
+- [ ] Configurable check intervals per file/directory
+- [ ] Alert on unexpected changes
+
+**Server-Side Processing:**
+- [ ] Dedicated web monitoring database tables
+- [ ] File monitoring database tables
+- [ ] Historical availability tracking
+- [ ] Response time statistics
+- [ ] Alert integration for failures
+
+**Dashboard Integration:**
+- [ ] Web endpoint status overview
+- [ ] Response time graphs
+- [ ] File integrity status display
+- [ ] Availability percentage calculations
+- [ ] Uptime/downtime visualization
+
+**Executables:**
+- [ ] `dist/web-monitor-win.exe` - Web page monitoring client
+- [ ] `dist/file-monitor-win.exe` - File attribute monitoring client
+
+### Use Cases
+
+- **Service Monitoring**: Monitor web applications, APIs, and services for availability
+- **SSL Management**: Track SSL certificate expiration dates
+- **File Integrity**: Ensure critical configuration files haven't been tampered with
+- **Backup Verification**: Monitor backup file sizes and timestamps
+- **Configuration Management**: Alert when config files change unexpectedly
+
+## Phase 8: Extended Reporting & Dashboard Enhancements (Planned)
+
+Advanced reporting capabilities and improved dashboard experience, including mobile optimization.
+
+### Planned Features
+
+**Historical Analytics:**
+- [ ] Device uptime/downtime percentage reports
+- [ ] Network bandwidth trend analysis
+- [ ] Average response time calculations
+- [ ] Connection event timeline visualization
+- [ ] Peak usage time identification
+
+**Custom Reports:**
+- [ ] Report builder with date range selection
+- [ ] Scheduled report generation
+- [ ] Export to CSV format
+- [ ] PDF report generation
+- [ ] Email report delivery
+
+**Enhanced Network Operations Dashboard:**
+- [ ] Multi-device comparison view
+- [ ] Network topology visualization
+- [ ] Real-time alert feed/notification center
+- [ ] Customizable dashboard widgets
+- [ ] Drag-and-drop dashboard layout
+- [ ] Save custom dashboard configurations
+- [ ] Dark mode theme option
+
+**Mobile Dashboard Improvements:**
+- [ ] Fully responsive layout for mobile devices
+- [ ] Touch-optimized controls
+- [ ] Mobile-specific navigation patterns
+- [ ] Simplified mobile views for key metrics
+- [ ] Progressive Web App (PWA) support
+- [ ] Offline data caching
+- [ ] Push notifications for mobile (optional)
+
+**Advanced Filtering & Search:**
+- [ ] Global search across all devices/clients
+- [ ] Advanced filter combinations (AND/OR logic)
+- [ ] Saved filter presets
+- [ ] Filter sharing between dashboard users
+- [ ] Regular expression support in search
+
+**Performance & UX:**
+- [ ] Lazy loading for large datasets
+- [ ] Virtual scrolling for long lists
+- [ ] Improved caching strategies
+- [ ] Loading state optimizations
+- [ ] Error handling improvements
+
+### Database Enhancements
 - [ ] Add database cleanup job (delete data older than X days)
-- [ ] Implement API authentication (JWT tokens)
-- [ ] Support for custom metrics (temperature, disk space, etc.)
-- [ ] Multi-tenancy (separate namespaces for different networks)
-- [ ] TLS for API endpoints
-
-### Performance Optimizations
 - [ ] Batch database writes (reduce saveDb() calls)
 - [ ] Add database connection pooling
 - [ ] Implement pagination for large history queries
 - [ ] Add caching layer for frequently accessed data
+
+### Security & Scalability
+- [ ] Implement API authentication (JWT tokens)
+- [ ] Support for custom metrics (temperature, disk space, etc.)
+- [ ] Multi-tenancy (separate namespaces for different networks)
+- [ ] TLS for API endpoints
+- [ ] Rate limiting on API endpoints
+
+## Phase 9: External Server Deployment (Planned)
+
+Production deployment and hardening for public server access.
+
+### Planned Features
+
+**External Server Testing:**
+- [ ] Deploy server on public cloud (AWS, Azure, DigitalOcean)
+- [ ] Test client connections from various network environments
+- [ ] Validate NAT traversal and firewall configurations
+- [ ] Performance testing under real-world conditions
+- [ ] Load testing with multiple clients
+
+**Security Hardening:**
+- [ ] Enhanced encryption protocols
+- [ ] Certificate-based authentication (optional)
+- [ ] IP whitelisting/blacklisting
+- [ ] DDoS protection strategies
+- [ ] Intrusion detection logging
+- [ ] Automated security scanning
+- [ ] Regular key rotation mechanisms
+
+**Linux Deployment Chain:**
+- [ ] Automated Linux server setup scripts
+- [ ] systemd service configurations
+- [ ] Docker containerization
+- [ ] Docker Compose orchestration
+- [ ] Nginx reverse proxy setup
+- [ ] Let's Encrypt SSL automation
+- [ ] Automated backup scripts
+
+**Monitoring & Maintenance:**
+- [ ] Server health monitoring
+- [ ] Log aggregation and analysis
+- [ ] Automated alerts for server issues
+- [ ] Update/patch management
+- [ ] Capacity planning tools
+
+**Documentation:**
+- [ ] Production deployment guide
+- [ ] Security best practices
+- [ ] Disaster recovery procedures
+- [ ] Scaling guidelines

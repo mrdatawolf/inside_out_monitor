@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchUnifiClients, fetchUnifiStats } from '../api'
 import './UniFiClients.css'
+import './electric-glow.css'
 
 function UniFiClients() {
   const [clients, setClients] = useState([])
@@ -11,6 +12,7 @@ function UniFiClients() {
   const [lastUpdated, setLastUpdated] = useState(null)
   const [filterText, setFilterText] = useState('')
   const [filterType, setFilterType] = useState('all') // all, wired, wireless
+  const [filterConnection, setFilterConnection] = useState('all') // all, connected, disconnected
 
   useEffect(() => {
     loadData()
@@ -69,8 +71,36 @@ function UniFiClients() {
     return '📡' // wireless default
   }
 
+  // Handle stat card clicks
+  function handleStatCardClick(filterName) {
+    switch (filterName) {
+      case 'all':
+        setFilterType('all')
+        setFilterConnection('all')
+        break
+      case 'connected':
+        setFilterConnection(filterConnection === 'connected' ? 'all' : 'connected')
+        break
+      case 'disconnected':
+        setFilterConnection(filterConnection === 'disconnected' ? 'all' : 'disconnected')
+        break
+      case 'wired':
+        setFilterType(filterType === 'wired' ? 'all' : 'wired')
+        setFilterConnection('connected') // Wired/Wireless stats only show connected
+        break
+      case 'wireless':
+        setFilterType(filterType === 'wireless' ? 'all' : 'wireless')
+        setFilterConnection('connected') // Wired/Wireless stats only show connected
+        break
+    }
+  }
+
   // Filter clients
   const filteredClients = clients.filter(client => {
+    // Connection filter
+    if (filterConnection === 'connected' && !client.is_connected) return false
+    if (filterConnection === 'disconnected' && client.is_connected) return false
+
     // Type filter
     if (filterType === 'wired' && !client.is_wired) return false
     if (filterType === 'wireless' && client.is_wired) return false
@@ -110,23 +140,43 @@ function UniFiClients() {
       {/* Stats Overview */}
       {stats && (
         <div className="stats-grid">
-          <div className="stat-card">
+          <div
+            className={`stat-card clickable ${filterType === 'all' && filterConnection === 'all' ? 'active' : ''}`}
+            onClick={() => handleStatCardClick('all')}
+            title="Click to show all clients"
+          >
             <div className="stat-value">{stats.total_clients}</div>
             <div className="stat-label">Total Clients</div>
           </div>
-          <div className="stat-card online">
+          <div
+            className={`stat-card online clickable ${filterConnection === 'connected' ? 'active' : ''}`}
+            onClick={() => handleStatCardClick('connected')}
+            title="Click to filter connected clients"
+          >
             <div className="stat-value">{stats.connected_clients}</div>
             <div className="stat-label">Connected</div>
           </div>
-          <div className="stat-card offline">
+          <div
+            className={`stat-card offline clickable ${filterConnection === 'disconnected' ? 'active' : ''}`}
+            onClick={() => handleStatCardClick('disconnected')}
+            title="Click to filter disconnected clients"
+          >
             <div className="stat-value">{stats.disconnected_clients}</div>
             <div className="stat-label">Disconnected</div>
           </div>
-          <div className="stat-card">
+          <div
+            className={`stat-card online clickable ${filterType === 'wired' && filterConnection === 'connected' ? 'active' : ''}`}
+            onClick={() => handleStatCardClick('wired')}
+            title="Click to filter wired clients"
+          >
             <div className="stat-value">{stats.wired_clients}</div>
             <div className="stat-label">Wired</div>
           </div>
-          <div className="stat-card">
+          <div
+            className={`stat-card online clickable ${filterType === 'wireless' && filterConnection === 'connected' ? 'active' : ''}`}
+            onClick={() => handleStatCardClick('wireless')}
+            title="Click to filter wireless clients"
+          >
             <div className="stat-value">{stats.wireless_clients}</div>
             <div className="stat-label">Wireless</div>
           </div>

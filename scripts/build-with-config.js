@@ -107,6 +107,7 @@ function runEsbuild(name, entryPoint, outfile) {
 runEsbuild('client-cli.js', 'client/client-cli.js', 'dist/client-bundle.cjs');
 runEsbuild('ping-monitor-cli.js', 'client/ping-monitor-cli.js', 'dist/ping-bundle.cjs');
 runEsbuild('unifi-monitor.js', 'client/unifi-monitor.js', 'dist/unifi-bundle.cjs');
+runEsbuild('web-file-monitor-cli.js', 'client/web-file-monitor-cli.js', 'dist/monitoring-bundle.cjs');
 
 console.log('\n✅ All bundles created with config.js values injected');
 console.log('   Next: Run pkg to create executables from bundles');

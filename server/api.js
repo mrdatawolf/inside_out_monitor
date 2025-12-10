@@ -95,11 +95,12 @@ app.get('/api/devices', (req, res) => {
 
     const devices = sqlToJson(result);
 
-    // Calculate status based on last heartbeat (10 minutes threshold)
+    // Calculate status based on last heartbeat (configurable threshold, default 5 minutes)
     const now = Math.floor(Date.now() / 1000);
+    const onlineThreshold = config.alerting?.behavior?.onlineThresholdSeconds || 300;
     const devicesWithStatus = devices.map(device => ({
       ...device,
-      status: (now - device.last_seen) < 600 ? 'online' : 'offline',
+      status: (now - device.last_seen) < onlineThreshold ? 'online' : 'offline',
       last_seen_ago: now - device.last_seen
     }));
 
@@ -150,12 +151,13 @@ app.get('/api/devices/:name', (req, res) => {
     const interfaces = sqlToJson(interfacesResult);
 
     const now = Math.floor(Date.now() / 1000);
+    const onlineThreshold = config.alerting?.behavior?.onlineThresholdSeconds || 300;
     res.json({
       device: {
         name: heartbeat.device_name,
         last_seen: heartbeat.received_at,
         last_seen_ago: now - heartbeat.received_at,
-        status: (now - heartbeat.received_at) < 600 ? 'online' : 'offline',
+        status: (now - heartbeat.received_at) < onlineThreshold ? 'online' : 'offline',
         device_timestamp: heartbeat.device_timestamp,
         interfaces: interfaces
       }
@@ -273,9 +275,10 @@ app.get('/api/stats', (req, res) => {
     `);
     const totalDevices = sqlToJson(devicesResult)[0].count;
 
-    // Online devices (heartbeat in last 10 minutes)
+    // Online devices (heartbeat within configurable threshold, default 5 minutes)
     const now = Math.floor(Date.now() / 1000);
-    const onlineThreshold = now - 600;
+    const onlineThresholdSeconds = config.alerting?.behavior?.onlineThresholdSeconds || 300;
+    const onlineThreshold = now - onlineThresholdSeconds;
 
     const onlineResult = db.exec(`
       SELECT COUNT(DISTINCT device_name) as count
@@ -929,6 +932,168 @@ app.get('/api/reports/unifi/suspicious-patterns', (req, res) => {
     const threshold = parseInt(req.query.threshold) || 20;
     const report = UniFiReports.getSuspiciousPatterns(threshold);
     res.json(report);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// MONITORING ENDPOINTS (Web, SSL, File, Folder)
+// ============================================================================
+
+// GET /api/monitoring/targets - List all monitoring targets with current status
+app.get('/api/monitoring/targets', (req, res) => {
+  try {
+    const db = getDb();
+    if (!db) {
+      return res.status(503).json({ error: 'Database not initialized' });
+    }
+
+    // Get latest status for each target
+    const result = db.exec(`
+      SELECT
+        m.target_type,
+        m.target_identifier,
+        m.target_name,
+        m.monitor_name,
+        m.status,
+        m.response_time_ms,
+        m.status_code,
+        m.file_exists,
+        m.file_size,
+        m.file_created,
+        m.file_modified,
+        m.file_hash,
+        m.file_hash_match,
+        m.folder_file_count,
+        m.folder_total_size,
+        m.ssl_valid,
+        m.ssl_expires,
+        m.ssl_days_until_expiry,
+        m.error_message,
+        m.received_at as last_check,
+        (? - m.received_at) as last_check_ago
+      FROM monitoring_results m
+      INNER JOIN (
+        SELECT target_type, target_identifier, MAX(received_at) as max_received
+        FROM monitoring_results
+        GROUP BY target_type, target_identifier
+      ) latest ON m.target_type = latest.target_type
+                 AND m.target_identifier = latest.target_identifier
+                 AND m.received_at = latest.max_received
+      ORDER BY m.target_type, m.target_name, m.target_identifier
+    `, [Math.floor(Date.now() / 1000)]);
+
+    const targets = sqlToJson(result);
+    res.json({ targets });
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/monitoring/targets/:type/:identifier/history - Get history for a specific target
+app.get('/api/monitoring/targets/:type/:identifier/history', (req, res) => {
+  try {
+    const db = getDb();
+    if (!db) {
+      return res.status(503).json({ error: 'Database not initialized' });
+    }
+
+    const targetType = decodeURIComponent(req.params.type);
+    const targetIdentifier = decodeURIComponent(req.params.identifier);
+    const hours = parseInt(req.query.hours) || 24;
+    const limit = parseInt(req.query.limit) || 100;
+    const now = Math.floor(Date.now() / 1000);
+    const since = now - (hours * 3600);
+
+    const result = db.exec(`
+      SELECT
+        monitor_name,
+        target_type,
+        target_identifier,
+        target_name,
+        status,
+        response_time_ms,
+        status_code,
+        file_exists,
+        file_size,
+        file_created,
+        file_modified,
+        file_hash,
+        file_hash_match,
+        folder_file_count,
+        folder_total_size,
+        ssl_valid,
+        ssl_expires,
+        ssl_days_until_expiry,
+        error_message,
+        timestamp,
+        received_at
+      FROM monitoring_results
+      WHERE target_type = ? AND target_identifier = ? AND received_at >= ?
+      ORDER BY received_at DESC
+      LIMIT ?
+    `, [targetType, targetIdentifier, since, limit]);
+
+    const history = sqlToJson(result);
+    res.json({ history });
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/monitoring/stats - Overall monitoring statistics
+app.get('/api/monitoring/stats', (req, res) => {
+  try {
+    const db = getDb();
+    if (!db) {
+      return res.status(503).json({ error: 'Database not initialized' });
+    }
+
+    // Get counts by type and status
+    const result = db.exec(`
+      SELECT
+        m.target_type,
+        m.status,
+        COUNT(DISTINCT m.target_identifier) as count
+      FROM monitoring_results m
+      INNER JOIN (
+        SELECT target_type, target_identifier, MAX(received_at) as max_received
+        FROM monitoring_results
+        GROUP BY target_type, target_identifier
+      ) latest ON m.target_type = latest.target_type
+                 AND m.target_identifier = latest.target_identifier
+                 AND m.received_at = latest.max_received
+      GROUP BY m.target_type, m.status
+    `);
+
+    const countsByType = sqlToJson(result);
+
+    // Calculate totals
+    const stats = {
+      total_targets: 0,
+      by_type: {},
+      by_status: {}
+    };
+
+    countsByType.forEach(row => {
+      stats.total_targets += row.count;
+
+      if (!stats.by_type[row.target_type]) {
+        stats.by_type[row.target_type] = {};
+      }
+      stats.by_type[row.target_type][row.status] = row.count;
+
+      if (!stats.by_status[row.status]) {
+        stats.by_status[row.status] = 0;
+      }
+      stats.by_status[row.status] += row.count;
+    });
+
+    res.json({ stats });
   } catch (error) {
     console.error('API Error:', error);
     res.status(500).json({ error: error.message });

@@ -11,9 +11,10 @@ import { dirname, join } from 'path';
 import dgram from 'dgram';
 import nacl from 'tweetnacl';
 import util from 'tweetnacl-util';
-import { initDb, insertHeartbeat, insertPingResults } from './db.js';
-import { initUnifiDb, insertUnifiClients } from './unifi-db.js';
+import { initDb, insertHeartbeat, insertPingResults, insertMonitoringResults } from './db.js';
+import { initUnifiDb, insertUnifiClients, markDisconnectedClients } from './unifi-db.js';
 import { startApi } from './api.js';
+import config from '../config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -176,6 +177,23 @@ async function startServer() {
             message.results || []
           );
           console.log(`[${new Date().toISOString()}] Ping results from ${message.name} (${rinfo.address}:${rinfo.port}) - ${message.results?.length || 0} targets`);
+        } else if (message.type === 'monitoring') {
+          // Handle monitoring results (web, SSL, file, folder)
+          if (!message.results || !Array.isArray(message.results)) {
+            console.log(`[${new Date().toISOString()}] Invalid monitoring payload from ${rinfo.address}:${rinfo.port} - missing results array`);
+            return;
+          }
+          await insertMonitoringResults(
+            message.name,
+            message.timestamp,
+            message.results
+          );
+          const typeCounts = message.results.reduce((acc, r) => {
+            acc[r.type] = (acc[r.type] || 0) + 1;
+            return acc;
+          }, {});
+          const typeStr = Object.entries(typeCounts).map(([type, count]) => `${count} ${type}`).join(', ');
+          console.log(`[${new Date().toISOString()}] Monitoring results from ${message.name} (${rinfo.address}:${rinfo.port}) - ${typeStr}`);
         } else if (message.type === 'unifi') {
           // Handle UniFi client data
           if (!message.clients || !Array.isArray(message.clients)) {
@@ -212,6 +230,17 @@ async function startServer() {
     // Start API server
     console.log('Starting API server...');
     startApi(apiPort);
+
+    // Start periodic UniFi client disconnection check
+    const unifiCheckInterval = 60; // Check every 60 seconds
+    const onlineThresholdSeconds = config.alerting?.behavior?.onlineThresholdSeconds || 300;
+    console.log(`\n✓ UniFi disconnect monitoring enabled`);
+    console.log(`  Check interval: ${unifiCheckInterval}s`);
+    console.log(`  Disconnect threshold: ${onlineThresholdSeconds}s (${Math.floor(onlineThresholdSeconds / 60)} min)`);
+
+    setInterval(() => {
+      markDisconnectedClients(onlineThresholdSeconds);
+    }, unifiCheckInterval * 1000);
 
     console.log('');
     console.log('='.repeat(60));

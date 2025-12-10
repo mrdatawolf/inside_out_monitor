@@ -1,0 +1,97 @@
+{
+  "_comment": "Web and File Monitoring Configuration",
+  "_description": "Define targets for web endpoints, SSL certificates, files, and folders to monitor",
+
+  "targets": [
+    {
+      "_comment": "Web endpoint monitoring - checks if a website/API is accessible",
+      "type": "web",
+      "url": "https://example.com",
+      "name": "Example Website",
+      "interval": 60,
+      "timeout": 5000,
+      "expectedStatus": 200,
+      "ignoreSsl": true
+    },
+    {
+      "_comment": "SSL certificate monitoring - separate from web availability",
+      "type": "ssl",
+      "url": "https://example.com",
+      "name": "Example SSL Cert",
+      "interval": 3600,
+      "timeout": 5000
+    },
+    {
+      "_comment": "API health check",
+      "type": "web",
+      "url": "https://api.example.com/health",
+      "name": "API Health Check",
+      "interval": 30,
+      "expectedStatus": 200
+    },
+    {
+      "_comment": "File monitoring - checks existence, size, and modification time",
+      "type": "file",
+      "path": "C:\\backups\\daily.zip",
+      "name": "Daily Backup",
+      "interval": 3600,
+      "checkSize": true,
+      "checkHash": false
+    },
+    {
+      "_comment": "File with hash validation - monitors for file changes",
+      "type": "file",
+      "path": "C:\\config\\app.config",
+      "name": "Application Config",
+      "interval": 300,
+      "checkHash": true,
+      "expectedHash": "abc123def456..."
+    },
+    {
+      "_comment": "UNC path file monitoring",
+      "type": "file",
+      "path": "\\\\server\\share\\important.dat",
+      "name": "Network File",
+      "interval": 600
+    },
+    {
+      "_comment": "Folder monitoring - checks file count and total size",
+      "type": "folder",
+      "path": "C:\\backups",
+      "name": "Backup Folder",
+      "interval": 3600
+    },
+    {
+      "_comment": "UNC path folder monitoring",
+      "type": "folder",
+      "path": "\\\\nas\\documents",
+      "name": "NAS Documents",
+      "interval": 1800
+    }
+  ],
+
+  "_notes": {
+    "types": {
+      "web": "HTTP/HTTPS endpoint monitoring - checks availability and response time",
+      "ssl": "SSL certificate validation - checks expiry and validity",
+      "file": "File monitoring - checks existence, size, dates, and optional hash",
+      "folder": "Folder monitoring - counts files and calculates total size"
+    },
+    "intervals": "Interval is in seconds. Each target can have its own check frequency.",
+    "web_options": {
+      "timeout": "Request timeout in milliseconds (default: 5000)",
+      "expectedStatus": "Expected HTTP status code (default: 200)",
+      "ignoreSsl": "Ignore SSL certificate errors for availability check (default: true)"
+    },
+    "file_options": {
+      "checkSize": "Track file size changes (default: true)",
+      "checkHash": "Calculate SHA256 hash for integrity checking (default: false)",
+      "expectedHash": "Expected SHA256 hash - alerts if file content changes"
+    },
+    "paths": {
+      "windows_local": "C:\\path\\to\\file.txt",
+      "windows_unc": "\\\\server\\share\\file.txt",
+      "linux": "/path/to/file.txt"
+    }
+  }
+}

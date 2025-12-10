@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electric Border Test</title>
+  <style>
+    body {
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .stat-card {
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      width: 150px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    /* Electric effect */
+    .stat-card.active {
+      position: relative;
+      overflow: visible;
+      padding: 2px;
+      background: linear-gradient(
+          -30deg,
+          var(--glow-color, #4CAF50),
+          transparent,
+          var(--glow-color, #4CAF50)
+        ),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05));
+      box-shadow:
+        0 0 20px var(--glow-color, #4CAF50),
+        0 0 40px rgba(var(--glow-rgb, 76, 175, 80), 0.3);
+    }
+
+    .stat-card.active::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      border: 2px solid var(--glow-color, #4CAF50);
+      filter: var(--filter-effect, url(#filter-green));
+      pointer-events: none;
+    }
+
+    .stat-card.active::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      border: 2px solid var(--glow-color, #4CAF50);
+      filter: blur(4px);
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .stat-card.active.green {
+      --glow-color: #4CAF50;
+      --glow-rgb: 76, 175, 80;
+      --filter-effect: url(#filter-green);
+    }
+
+    .stat-card.active.blue {
+      --glow-color: #2196F3;
+      --glow-rgb: 33, 150, 243;
+      --filter-effect: url(#filter-blue);
+    }
+
+    .stat-card.active.red {
+      --glow-color: #f44336;
+      --glow-rgb: 244, 67, 54;
+      --filter-effect: url(#filter-red);
+    }
+
+    .stat-card .stat-value,
+    .stat-card .stat-label {
+      position: relative;
+      z-index: 1;
+      background: white;
+      padding: 10px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG Filters -->
+  <svg style="position: absolute; width: 0; height: 0;">
+    <defs>
+      <filter id="filter-green" colorInterpolationFilters="sRGB" x="-20%" y="-20%" width="140%" height="140%">
+        <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="7" seed="10" />
+        <feColorMatrix type="hueRotate" result="pt1">
+          <animate attributeName="values" values="0;360" dur="0.7s" repeatCount="indefinite" />
+        </feColorMatrix>
+        <feTurbulence type="turbulence" baseFrequency="0.03" numOctaves="7" seed="15" />
+        <feColorMatrix type="hueRotate" result="pt2">
+          <animate attributeName="values" values="0;270;180;90;360" dur="4.5s" repeatCount="indefinite" />
+        </feColorMatrix>
+        <feBlend in="pt1" in2="pt2" mode="normal" result="combinedNoise" />
+        <feDisplacementMap in="SourceGraphic" scale="30" xChannelSelector="R" yChannelSelector="B" />
+      </filter>
+
+      <filter id="filter-blue" colorInterpolationFilters="sRGB" x="-20%" y="-20%" width="140%" height="140%">
+        <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="7" />
+        <feColorMatrix type="hueRotate" result="pt1">
+          <animate attributeName="values" values="0;360" dur=".6s" repeatCount="indefinite" />
+        </feColorMatrix>
+        <feTurbulence type="turbulence" baseFrequency="0.03" numOctaves="7" seed="5" />
+        <feColorMatrix type="hueRotate" result="pt2">
+          <animate attributeName="values" values="0;333;199;286;64;168;256;157;360" dur="5s" repeatCount="indefinite" />
+        </feColorMatrix>
+        <feBlend in="pt1" in2="pt2" mode="normal" result="combinedNoise" />
+        <feDisplacementMap in="SourceGraphic" scale="30" xChannelSelector="R" yChannelSelector="B" />
+      </filter>
+
+      <filter id="filter-red" colorInterpolationFilters="sRGB" x="-20%" y="-20%" width="140%" height="140%">
+        <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="7" seed="20" />
+        <feColorMatrix type="hueRotate" result="pt1">
+          <animate attributeName="values" values="0;360" dur="0.5s" repeatCount="indefinite" />
+        </feColorMatrix>
+        <feTurbulence type="turbulence" baseFrequency="0.03" numOctaves="7" seed="25" />
+        <feColorMatrix type="hueRotate" result="pt2">
+          <animate attributeName="values" values="0;180;90;270;360" dur="4s" repeatCount="indefinite" />
+        </feColorMatrix>
+        <feBlend in="pt1" in2="pt2" mode="normal" result="combinedNoise" />
+        <feDisplacementMap in="SourceGraphic" scale="30" xChannelSelector="R" yChannelSelector="B" />
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="stat-card">
+    <div class="stat-value">42</div>
+    <div class="stat-label">Normal</div>
+  </div>
+
+  <div class="stat-card active green">
+    <div class="stat-value">15</div>
+    <div class="stat-label">Green Active</div>
+  </div>
+
+  <div class="stat-card active blue">
+    <div class="stat-value">8</div>
+    <div class="stat-label">Blue Active</div>
+  </div>
+
+  <div class="stat-card active red">
+    <div class="stat-value">3</div>
+    <div class="stat-label">Red Active</div>
+  </div>
+</body>
+</html>

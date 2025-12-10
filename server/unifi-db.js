@@ -234,7 +234,7 @@ function logConnectionEvent(mac, eventType, timestamp, hostname, ip) {
 }
 
 // Mark clients as disconnected (called periodically to detect disconnections)
-export function markDisconnectedClients(onlineThresholdSeconds = 600) {
+export function markDisconnectedClients(onlineThresholdSeconds = 300) {
   if (!unifiDb) return;
 
   const now = Math.floor(Date.now() / 1000);

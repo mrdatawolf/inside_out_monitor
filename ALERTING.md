@@ -53,7 +53,7 @@ alerting: {
     gracePeriodSeconds: 120,     // Grace period for brief outages (2 min)
     batchDelaySeconds: 30,       // Batch alerts within 30 seconds
     checkIntervalSeconds: 60,    // Check status every 60 seconds
-    onlineThresholdSeconds: 600, // Device offline after 10 min
+    onlineThresholdSeconds: 300, // Device offline after 5 min (also used by dashboard & UniFi monitoring)
     cooldownSeconds: 3600        // Re-alert after 1 hour
   }
 }
@@ -98,7 +98,7 @@ The alerting system supports the following event types:
 
 ### Heartbeat Device Events
 
-- **`offline`**: Device stops sending heartbeats (no heartbeat for 10+ minutes)
+- **`offline`**: Device stops sending heartbeats (no heartbeat for 5+ minutes by default, configurable)
 - **`online`**: Device resumes sending heartbeats after being offline
 - **`new_device`**: First time a device is seen by the monitoring system
 

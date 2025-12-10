@@ -30,7 +30,14 @@
       "Bash(npm run test:unifi:sites:*)",
       "Bash(npm run build:unifi:win:*)",
       "Bash(npm run bundle:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(npm test:*)",
+      "Bash(ls:*)",
+      "Bash(npm run:*)",
+      "Bash(node scripts/build-with-config.js:*)",
+      "Bash(copy clientmonitoring-targets.json.example distmonitoring-targets.json.example)",
+      "Bash(node:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

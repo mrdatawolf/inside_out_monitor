@@ -65,12 +65,23 @@ export default {
     defaultServerPort: 4000  // Server port to report to
   },
 
+  // Web & File Monitoring Configuration (Phase 7)
+  monitoring: {
+    enabled: false,          // Set to true to enable web/file monitoring
+    defaultInterval: 60,     // Default check interval (seconds) - used as fallback
+                             // Note: Each target in monitoring-targets.json can override this
+    defaultTimeout: 5000,    // Default HTTP timeout in milliseconds
+    ignoreSsl: true,         // Ignore SSL certificate errors for web checks
+    defaultServerPort: 4000  // Server port to report to
+  },
+
   // File Paths (relative to executable location)
   paths: {
     secretKey: './secret.key',        // Encryption key for UDP packets
     apiReadKey: './api_read.key',     // API authentication key (Phase 7: Multi-Site)
     database: './databases',
-    pingTargets: './ping-targets.json'
+    pingTargets: './ping-targets.json',
+    monitoringTargets: './monitoring-targets.json'  // Web & file monitoring targets (Phase 7)
   },
 
   // Alerting Configuration (Phase 5)
@@ -110,7 +121,7 @@ export default {
       gracePeriodSeconds: 120,       // Grace period for brief outages (2 min)
       batchDelaySeconds: 30,         // Batch alerts within this window
       checkIntervalSeconds: 60,      // Status check frequency (1 min)
-      onlineThresholdSeconds: 600,   // Consider device offline after 10 min
+      onlineThresholdSeconds: 300,   // Consider device offline after 5 min (used by dashboard & alerts)
       cooldownSeconds: 3600          // Re-alert cooldown (1 hour)
     }
   }

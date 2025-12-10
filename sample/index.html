@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gradient Glow Cards</title>
+
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style src=".\sample.css"></style>
+  </head>
+
+  <body class="bg-[oklch(0.145_0_0)] text-white font-sans h-screen overflow-hidden">
+    <!-- SVG Filters -->
+    <svg class="svg-filters">
+      <defs>
+        <filter id="filter-orange" color-interpolation-filters="sRGB" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="10" result="noise1" seed="1" />
+          <feOffset in="noise1" dx="0" dy="0" result="offsetNoise1">
+            <animate attributeName="dy" values="700; 0" dur="6s" repeatCount="indefinite" />
+          </feOffset>
+          <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="10" result="noise2" seed="2" />
+          <feOffset in="noise2" dx="0" dy="0" result="offsetNoise2">
+            <animate attributeName="dx" values="490; 0" dur="6s" repeatCount="indefinite" />
+          </feOffset>
+          <feBlend in="offsetNoise1" in2="offsetNoise2" mode="color-dodge" result="combinedNoise" />
+          <feDisplacementMap in="SourceGraphic" in2="combinedNoise" scale="30" xChannelSelector="R" yChannelSelector="B" />
+        </filter>
+
+        <filter id="filter-blue" color-interpolation-filters="sRGB" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="7" />
+          <feColorMatrix type="hueRotate" result="pt1">
+            <animate attributeName="values" values="0;360" dur=".6s" repeatCount="indefinite" />
+          </feColorMatrix>
+          <feTurbulence type="turbulence" baseFrequency="0.03" numOctaves="7" seed="5" />
+          <feColorMatrix type="hueRotate" result="pt2">
+            <animate attributeName="values" values="0;333;199;286;64;168;256;157;360" dur="5s" repeatCount="indefinite" />
+          </feColorMatrix>
+          <feBlend in="pt1" in2="pt2" mode="normal" result="combinedNoise" />
+          <feDisplacementMap in="SourceGraphic" scale="30" xChannelSelector="R" yChannelSelector="B" />
+        </filter>
+      </defs>
+    </svg>
+
+    <!-- Main Container -->
+    <main class="flex flex-wrap items-center justify-center h-screen w-full gap-8 p-8 overflow-auto">
+      <!-- Card 1: Product Example -->
+      <div class="glow-card card-orange">
+        <div class="relative">
+          <div class="border border-[color:oklch(from_var(--border-color)_l_c_h_/_.5)] rounded-2xl p-[.15em]">
+            <div class="glow-inner"></div>
+          </div>
+
+          <div class="glow-border-1"></div>
+          <div class="glow-border-2"></div>
+          <div class="overlay"></div>
+          <div class="overlay overlay-light"></div>
+          <div class="bg-glow"></div>
+
+          <div class="absolute inset-0 flex flex-col justify-between p-10">
+            <div class="glass-label">🔥 Featured Tool</div>
+            <p class="text-4xl font-semibold mt-auto">Text to Voice</p>
+            <hr class="my-4 opacity-10 border-none h-px bg-current" />
+            <p class="opacity-70 text-sm leading-relaxed">
+              Instantly convert your text into realistic AI voices. Perfect for podcasts, videos, and content creators.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: AI Idea Example -->
+      <div class="glow-card card-blue">
+        <div class="relative">
+          <div class="border border-[color:oklch(from_var(--border-color)_l_c_h_/_.5)] rounded-2xl p-[.15em]">
+            <div class="glow-inner"></div>
+          </div>
+
+          <div class="glow-border-1"></div>
+          <div class="glow-border-2"></div>
+          <div class="overlay"></div>
+          <div class="overlay overlay-light"></div>
+          <div class="bg-glow"></div>
+
+          <div class="absolute inset-0 flex flex-col justify-between p-10">
+            <div class="glass-label">✨ AI Feature</div>
+            <p class="text-4xl font-semibold mt-auto">Podcast Summarizer</p>
+            <hr class="my-4 opacity-10 border-none h-px bg-current" />
+            <p class="opacity-70 text-sm leading-relaxed">
+              Upload your podcast and get short, smart summaries with timestamps using AI.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

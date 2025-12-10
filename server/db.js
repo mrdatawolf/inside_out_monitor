@@ -127,6 +127,39 @@ export async function initDb() {
   db.run(`CREATE INDEX IF NOT EXISTS idx_alert_entity ON alert_log(entity_type, entity_name)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_alert_sent_at ON alert_log(sent_at)`);
 
+  // Create monitoring results table (web, SSL, file, folder monitoring)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS monitoring_results (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      monitor_name TEXT NOT NULL,
+      target_type TEXT NOT NULL,
+      target_identifier TEXT NOT NULL,
+      target_name TEXT,
+      status TEXT NOT NULL,
+      response_time_ms REAL,
+      status_code INTEGER,
+      file_exists INTEGER,
+      file_size INTEGER,
+      file_created INTEGER,
+      file_modified INTEGER,
+      file_hash TEXT,
+      file_hash_match INTEGER,
+      folder_file_count INTEGER,
+      folder_total_size INTEGER,
+      ssl_valid INTEGER,
+      ssl_expires INTEGER,
+      ssl_days_until_expiry INTEGER,
+      error_message TEXT,
+      timestamp INTEGER NOT NULL,
+      received_at INTEGER NOT NULL
+    )
+  `);
+
+  db.run(`CREATE INDEX IF NOT EXISTS idx_monitor_name_monitoring ON monitoring_results(monitor_name)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_target_type ON monitoring_results(target_type)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_target_identifier ON monitoring_results(target_identifier)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_monitoring_received_at ON monitoring_results(received_at)`);
+
   // Phase 7 migrations: Add location/sublocation support
   try {
     // Check if location column exists in heartbeats table
@@ -267,6 +300,57 @@ export function insertPingResults(monitorName, timestamp, results) {
         result.name || result.ip,
         result.status,
         result.response_time_ms,
+        timestamp,
+        receivedAt
+      ]
+    );
+  }
+
+  // Save immediately after insert
+  saveDb();
+}
+
+// Insert monitoring results (web, SSL, file, folder)
+export function insertMonitoringResults(monitorName, timestamp, results) {
+  if (!db) {
+    throw new Error('Database not initialized');
+  }
+
+  const receivedAt = Math.floor(Date.now() / 1000);
+
+  for (const result of results) {
+    // Determine target_identifier based on type
+    const targetIdentifier = result.url || result.path || result.name;
+
+    db.run(
+      `INSERT INTO monitoring_results
+       (monitor_name, target_type, target_identifier, target_name, status,
+        response_time_ms, status_code,
+        file_exists, file_size, file_created, file_modified, file_hash, file_hash_match,
+        folder_file_count, folder_total_size,
+        ssl_valid, ssl_expires, ssl_days_until_expiry,
+        error_message, timestamp, received_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        monitorName,
+        result.type,
+        targetIdentifier,
+        result.name || targetIdentifier,
+        result.status,
+        result.response_time_ms || null,
+        result.status_code || null,
+        result.exists !== undefined ? (result.exists ? 1 : 0) : null,
+        result.size || null,
+        result.created || null,
+        result.modified || null,
+        result.hash || null,
+        result.hash_match !== undefined ? (result.hash_match ? 1 : 0) : null,
+        result.file_count || null,
+        result.total_size || null,
+        result.valid !== undefined ? (result.valid ? 1 : 0) : null,
+        result.expires || null,
+        result.days_until_expiry || null,
+        result.error || null,
         timestamp,
         receivedAt
       ]

@@ -80,13 +80,25 @@ cp client/secret.key dist/secret.key
 - Dashboard integration with real-time client list
 - See [ARCHITECTURE.md](ARCHITECTURE.md#phase-6-unifi-network-monitoring-complete) for details
 
-**Phase 7** (Planned): Extended Reporting
+**Phase 7** (Planned): Web & File Monitoring
+- Web page availability monitoring client
+- HTTP/HTTPS endpoint health checks
+- Response time tracking
+- File attribute monitoring (size, modification time, existence)
+- File integrity checking
+- Configurable check intervals per target
+
+**Phase 8** (Planned): Extended Reporting & Dashboard Enhancements
 - Historical trend analysis
 - Uptime/downtime statistics
 - Network bandwidth reports
 - Custom report generation
+- Enhanced Network Operations dashboard
+- Mobile-responsive dashboard improvements
+- Advanced filtering and search capabilities
+- Export capabilities (CSV, PDF reports)
 
-**Phase 8** (Planned): External Server Deployment
+**Phase 9** (Planned): External Server Deployment
 - Test the server running on an external public accessible server
 - Add more encryption and checking to harden the system
 - Use it to test the Linux deployment chain
@@ -801,9 +813,10 @@ Decrypted JSON payload:
   - Responsive, modern UI
 - ✅ **Phase 4**: Ping monitoring for network devices
 - ✅ **Phase 5**: Alerting system ([ALERTING.md](ALERTING.md))
-- ✅ **Phase 6**: UniFi network monitoring ([ARCHITECTURE.md](ARCHITECTURE.md#phase-6-unifi-network-monitoring-complete))
-- 📋 **Phase 7**: Extended reporting
-- 📋 **Phase 8**: External server deployment
+- ✅ **Phase 6**: UniFi network monitoring ([ARCHITECTURE.md](ARCHITECTURE.md#phase-6-unifi-network-monitoring-complete)) - **CURRENT MILESTONE**
+- 📋 **Phase 7**: Web & file monitoring
+- 📋 **Phase 8**: Extended reporting & dashboard enhancements
+- 📋 **Phase 9**: External server deployment
 
 ## Phase 5: Alerting System (Complete)
 

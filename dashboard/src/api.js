@@ -104,6 +104,25 @@ export async function fetchUnifiStats() {
   return response.json();
 }
 
+// Monitoring endpoints (web, SSL, file, folder)
+export async function fetchMonitoringTargets() {
+  const response = await fetchWithAuth(`${API_BASE}/monitoring/targets`);
+  if (!response.ok) throw new Error('Failed to fetch monitoring targets');
+  return response.json();
+}
+
+export async function fetchMonitoringTargetHistory(type, identifier, hours = 24) {
+  const response = await fetchWithAuth(`${API_BASE}/monitoring/targets/${encodeURIComponent(type)}/${encodeURIComponent(identifier)}/history?hours=${hours}`);
+  if (!response.ok) throw new Error('Failed to fetch monitoring target history');
+  return response.json();
+}
+
+export async function fetchMonitoringStats() {
+  const response = await fetchWithAuth(`${API_BASE}/monitoring/stats`);
+  if (!response.ok) throw new Error('Failed to fetch monitoring stats');
+  return response.json();
+}
+
 // ============================================================================
 // UNIFI REPORTING ENDPOINTS
 // ============================================================================

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchPingTargets, fetchPingStats } from '../api'
 import './PingMonitor.css'
+import './electric-glow.css'
 
 function PingMonitor() {
   const [targets, setTargets] = useState([])
@@ -9,6 +10,7 @@ function PingMonitor() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
+  const [filterStatus, setFilterStatus] = useState('all') // all, online, offline
 
   useEffect(() => {
     loadData()
@@ -43,6 +45,17 @@ function PingMonitor() {
     return `${Math.floor(seconds / 86400)}d ago`
   }
 
+  // Handle stat card clicks
+  function handleStatCardClick(filter) {
+    setFilterStatus(filterStatus === filter ? 'all' : filter)
+  }
+
+  // Filter targets
+  const filteredTargets = targets.filter(target => {
+    if (filterStatus === 'all') return true
+    return target.status === filterStatus
+  })
+
   if (loading) return <div className="loading">Loading...</div>
   if (error) return <div className="error">Error: {error}</div>
 
@@ -50,16 +63,28 @@ function PingMonitor() {
     <div className="ping-monitor">
       {/* Stats Overview */}
       {stats && (
-        <div className="stats-grid">
-          <div className="stat-card">
+        <div className="stats-grid" key={lastUpdated?.getTime()} style={{ '--refresh-interval': '5s' }}>
+          <div
+            className={`stat-card clickable ${filterStatus === 'all' ? 'active' : ''}`}
+            onClick={() => handleStatCardClick('all')}
+            title="Click to show all targets"
+          >
             <div className="stat-value">{stats.total_targets}</div>
             <div className="stat-label">Total Targets</div>
           </div>
-          <div className="stat-card online">
+          <div
+            className={`stat-card online clickable ${filterStatus === 'online' ? 'active' : ''}`}
+            onClick={() => handleStatCardClick('online')}
+            title="Click to filter online targets"
+          >
             <div className="stat-value">{stats.online_targets}</div>
             <div className="stat-label">Online</div>
           </div>
-          <div className="stat-card offline">
+          <div
+            className={`stat-card offline clickable ${filterStatus === 'offline' ? 'active' : ''}`}
+            onClick={() => handleStatCardClick('offline')}
+            title="Click to filter offline targets"
+          >
             <div className="stat-value">{stats.offline_targets}</div>
             <div className="stat-label">Offline</div>
           </div>
@@ -72,12 +97,19 @@ function PingMonitor() {
 
       {/* Ping Targets List */}
       <div className="targets-section">
-        <h2>Ping Targets</h2>
+        <h2>
+          Ping Targets
+          {filterStatus !== 'all' && (
+            <span className="filter-indicator"> (Filtered: {filterStatus})</span>
+          )}
+        </h2>
         <div className="targets-list">
-          {targets.length === 0 ? (
-            <div className="no-targets">No ping targets reporting yet</div>
+          {filteredTargets.length === 0 ? (
+            <div className="no-targets">
+              {filterStatus === 'all' ? 'No ping targets reporting yet' : `No ${filterStatus} targets`}
+            </div>
           ) : (
-            targets.map(target => (
+            filteredTargets.map(target => (
               <Link
                 key={target.target_ip}
                 to={`/ping/${encodeURIComponent(target.target_ip)}`}
