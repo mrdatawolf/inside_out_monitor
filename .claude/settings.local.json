@@ -37,7 +37,8 @@
       "Bash(node scripts/build-with-config.js:*)",
       "Bash(copy clientmonitoring-targets.json.example distmonitoring-targets.json.example)",
       "Bash(node:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(cmd /c dir \"C:\\\\Scripts\\\\insideout\\\\databases\")"
     ],
     "deny": [],
     "ask": []

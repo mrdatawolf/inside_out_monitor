@@ -4,17 +4,30 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { stopAlerting } from './alerting.js';
 
-// In pkg executables, __dirname points to snapshot. Use process.cwd() or derive from execPath
-const __dirname = process.pkg ? dirname(process.execPath) : dirname(fileURLToPath(import.meta.url));
-const dbPath = join(__dirname, 'databases', 'heartbeats.sqlite3');
+// Get runtime directory - use process.cwd() for pkg executables to avoid bundle-time path resolution
+function getRuntimeDir() {
+  // When running as pkg executable, use current working directory
+  if (process.pkg) {
+    return process.cwd();
+  }
+  // When running as regular node script, use script directory
+  return dirname(fileURLToPath(import.meta.url));
+}
+
+const dbPath = join(getRuntimeDir(), 'databases', 'heartbeats.sqlite3');
 
 let db = null;
 let SQL = null;
 
 // Initialize database
 export async function initDb() {
+  // Log runtime directory for debugging
+  console.log(`Runtime directory: ${getRuntimeDir()}`);
+  console.log(`Looking for database at: ${dbPath}`);
+
   // Load WASM file manually to work with pkg bundler
-  const wasmPath = join(__dirname, 'sql-wasm.wasm');
+  const wasmPath = join(getRuntimeDir(), 'sql-wasm.wasm');
+  console.log(`Looking for WASM file at: ${wasmPath}`);
   const wasmBinary = readFileSync(wasmPath);
 
   // Initialize SQL.js with the WASM binary
@@ -24,10 +37,12 @@ export async function initDb() {
 
   // Load existing database or create new one
   if (existsSync(dbPath)) {
+    console.log(`✓ Found existing database file`);
     const buffer = readFileSync(dbPath);
     db = new SQL.Database(buffer);
     console.log('✓ Database loaded from disk');
   } else {
+    console.log(`✓ No existing database found, creating new one`);
     db = new SQL.Database();
     console.log('✓ New database created');
   }
