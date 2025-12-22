@@ -3,17 +3,28 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
-// In pkg executables, __dirname points to snapshot. Use process.cwd() or derive from execPath
-const __dirname = process.pkg ? dirname(process.execPath) : dirname(fileURLToPath(import.meta.url));
-const dbPath = join(__dirname, 'databases', 'unifi.sqlite3');
+// Get runtime directory - use process.cwd() for pkg executables to avoid bundle-time path resolution
+function getRuntimeDir() {
+  // When running as pkg executable, use current working directory
+  if (process.pkg) {
+    return process.cwd();
+  }
+  // When running as regular node script, use script directory
+  return dirname(fileURLToPath(import.meta.url));
+}
+
+const dbPath = join(getRuntimeDir(), 'databases', 'unifi.sqlite3');
 
 let unifiDb = null;
 let SQL = null;
 
 // Initialize UniFi database
 export async function initUnifiDb() {
+  // Log runtime directory for debugging
+  console.log(`Looking for UniFi database at: ${dbPath}`);
+
   // Load WASM file manually to work with pkg bundler
-  const wasmPath = join(__dirname, 'sql-wasm.wasm');
+  const wasmPath = join(getRuntimeDir(), 'sql-wasm.wasm');
   const wasmBinary = readFileSync(wasmPath);
 
   // Initialize SQL.js with the WASM binary
@@ -22,17 +33,20 @@ export async function initUnifiDb() {
   });
 
   // Ensure databases directory exists
-  const dbDir = join(__dirname, 'databases');
+  const dbDir = join(getRuntimeDir(), 'databases');
   if (!existsSync(dbDir)) {
+    console.log(`Creating databases directory at: ${dbDir}`);
     mkdirSync(dbDir, { recursive: true });
   }
 
   // Load existing database or create new one
   if (existsSync(dbPath)) {
+    console.log(`✓ Found existing UniFi database file`);
     const buffer = readFileSync(dbPath);
     unifiDb = new SQL.Database(buffer);
     console.log('✓ UniFi database loaded from disk');
   } else {
+    console.log(`✓ No existing UniFi database found, creating new one`);
     unifiDb = new SQL.Database();
     console.log('✓ New UniFi database created');
   }
